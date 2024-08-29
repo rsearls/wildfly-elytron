@@ -412,15 +412,36 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
     }
 
     protected InputStream getOidcConfigurationInputStreamWithProviderUrl() {
+        return getData(null);
+    }
+
+    protected InputStream getOidcConfigInputStreamWithAllowQueryParamsNotSet() {
+        return getOidcConfigurationInputStreamWithProviderUrl();
+    }
+
+    protected InputStream getOidcConfigInputStreamWithAllowQueryParamsFalse() {
+        return getData("\"allow-query-params\" : \"false\"");
+    }
+    protected InputStream getOidcConfigInputStreamWithAllowQueryParamsTrue() {
+        return getData("\"allow-query-params\" : \"true\"");
+    }
+
+    private InputStream getData(String optionalValue) {
         String oidcConfig = "{\n" +
                 "    \"resource\" : \"" + CLIENT_ID + "\",\n" +
                 "    \"public-client\" : \"false\",\n" +
                 "    \"provider-url\" : \"" + KEYCLOAK_CONTAINER.getAuthServerUrl() + "/realms/" + TEST_REALM + "\",\n" +
                 "    \"ssl-required\" : \"EXTERNAL\",\n" +
+                "    OPTIONAL-VALUE" +
                 "    \"credentials\" : {\n" +
                 "        \"secret\" : \"" + CLIENT_SECRET + "\"\n" +
                 "    }\n" +
                 "}";
+        if (optionalValue == null){
+            oidcConfig =  oidcConfig.replace("OPTIONAL-VALUE", "");
+        } else {
+            oidcConfig = oidcConfig.replace("OPTIONAL-VALUE", optionalValue + ",\n");
+        }
         return new ByteArrayInputStream(oidcConfig.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -49,12 +49,14 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "authentication-request-format", "request-object-signing-algorithm", "request-object-encryption-alg-value",
         "request-object-encryption-enc-value", "request-object-signing-keystore-file",
         "request-object-signing-keystore-password","request-object-signing-key-password", "request-object-signing-key-alias",
-        "request-object-signing-keystore-type"
+        "request-object-signing-keystore-type", "allow-query-params"
 })
 public class OidcJsonConfiguration {
 
     @JsonProperty("allow-any-hostname")
     protected boolean allowAnyHostname;
+    @JsonProperty("allow-query-params")
+    protected String allowQueryParams;
     @JsonProperty("disable-trust-manager")
     protected boolean disableTrustManager;
     @JsonProperty("truststore")
@@ -614,6 +616,13 @@ public class OidcJsonConfiguration {
 
     public void setRequestObjectEncryptionEncValue (String requestObjectEncryptionEncValue) {
         this.requestObjectEncryptionEncValue = requestObjectEncryptionEncValue;
+    }
+
+    public String getAllowQueryParams() {
+        return allowQueryParams;
+    }
+    public void setAllowQueryParams(String allowQueryParams) {
+        this.allowQueryParams = allowQueryParams;
     }
 }
 

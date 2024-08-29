@@ -143,6 +143,7 @@ public class OidcClientConfiguration {
     protected String requestObjectSigningKeyAlias;
     protected String requestObjectSigningKeyStoreType;
     protected JWKEncPublicKeyLocator encryptionPublicKeyLocator;
+    protected String allowQueryParams;
 
     public OidcClientConfiguration() {
     }
@@ -778,5 +779,15 @@ public class OidcClientConfiguration {
 
     public JWKEncPublicKeyLocator getEncryptionPublicKeyLocator() {
         return this.encryptionPublicKeyLocator;
+    }
+
+    public boolean isAllowQueryParamsDeclared() {
+        return this.allowQueryParams != null;
+    }
+    public boolean getAllowQueryParams() {
+        return this.allowQueryParams == null ? false : Boolean.valueOf(allowQueryParams);
+    }
+    public void setAllowQueryParams(String allowQueryParams) {
+        this.allowQueryParams = allowQueryParams;
     }
 }

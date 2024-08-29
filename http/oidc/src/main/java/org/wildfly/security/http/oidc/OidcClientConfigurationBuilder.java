@@ -165,7 +165,8 @@ public class OidcClientConfigurationBuilder {
         if (oidcJsonConfiguration.isPkce()) {
             oidcClientConfiguration.setPkce(true);
         }
-
+        
+        oidcClientConfiguration.setAllowQueryParams(oidcJsonConfiguration.getAllowQueryParams());
         oidcClientConfiguration.setBearerOnly(oidcJsonConfiguration.isBearerOnly());
         oidcClientConfiguration.setAutodetectBearerOnly(oidcJsonConfiguration.isAutodetectBearerOnly());
         oidcClientConfiguration.setEnableBasicAuth(oidcJsonConfiguration.isEnableBasicAuth());

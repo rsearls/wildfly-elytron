@@ -626,6 +626,21 @@ public class OidcClientContext {
             return delegate.requestUriParameterSupported;
         }
 
+        @Override
+        public boolean isAllowQueryParamsDeclared() {
+            return delegate.isAllowQueryParamsDeclared();
+        }
+
+        @Override
+        public boolean getAllowQueryParams() {
+            return delegate.getAllowQueryParams();
+        }
+
+        @Override
+        public void setAllowQueryParams(String allowQueryParams) {
+            delegate.allowQueryParams = allowQueryParams;
+        }
+
     }
 
     protected String getAuthServerBaseUrl(OidcHttpFacade facade, String base) {

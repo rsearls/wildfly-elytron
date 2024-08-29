@@ -469,7 +469,7 @@ public class OidcRequestAuthenticator {
 
     private String rewrittenRedirectUri(String originalUri) {
         Map<String, String> rewriteRules = deployment.getRedirectRewriteRules();
-        if (ALLOW_QUERY_PARAMS_PROPERTY && (rewriteRules == null || rewriteRules.isEmpty())) {
+        if (isAllowQueryParams() && (rewriteRules == null || rewriteRules.isEmpty())) {
             return originalUri;
         }
         try {
@@ -621,5 +621,13 @@ public class OidcRequestAuthenticator {
             jsonEncryption.setKey(encPublicKey);
             return jsonEncryption;
         }
+    }
+
+    private boolean isAllowQueryParams() {
+        // per deployment setting takes precedence over system property setting
+        if (deployment.isAllowQueryParamsDeclared()) {
+            return deployment.getAllowQueryParams();
+        }
+        return ALLOW_QUERY_PARAMS_PROPERTY;
     }
 }

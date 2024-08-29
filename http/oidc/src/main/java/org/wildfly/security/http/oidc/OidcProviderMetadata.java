@@ -151,6 +151,9 @@ public class OidcProviderMetadata {
     @JsonProperty("request_object_encryption_alg_values_supported")
     private List<String> requestObjectEncryptionAlgValuesSupported;
 
+    @JsonProperty("allow-query-params")
+    private String allowQueryParams;
+
     protected Map<String, Object> otherClaims = new HashMap<String, Object>();
 
     public String getIssuer() {
@@ -452,5 +455,16 @@ public class OidcProviderMetadata {
     @JsonAnySetter
     public void setOtherClaims(String name, Object value) {
         otherClaims.put(name, value);
+    }
+
+    public boolean isAllowQueryParamsDeclared() {
+        return allowQueryParams != null;
+    }
+
+    public boolean getAllowQueryParams() {
+        return allowQueryParams == null ? false : Boolean.valueOf(allowQueryParams);
+    }
+    public void setAllowQueryParams(String allowQueryParams) {
+        this.allowQueryParams = allowQueryParams;
     }
 }
