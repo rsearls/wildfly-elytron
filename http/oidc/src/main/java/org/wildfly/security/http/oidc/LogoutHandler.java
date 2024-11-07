@@ -63,21 +63,22 @@ final class LogoutHandler {
     });
 
     boolean tryLogout(OidcHttpFacade facade) {
+        log.trace("tryLogout entered");
         RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
         if (securityContext == null) {
             // no active session
-            log.trace("## LogoutHandler.tryLogout securityContext is null");
+            log.trace("tryLogout securityContext == null");
             return false;
         }
 
         if (isRpInitiatedLogoutPath(facade)) {
-            log.trace("## LogoutHandler.tryLogout isRpInitiatedLogoutPath");
+            log.trace("isRpInitiatedLogoutPath");
             redirectEndSessionEndpoint(facade);
             return true;
         }
 
         if (isLogoutCallbackPath(facade)) {
-            log.trace("## LogoutHandler.tryLogout isLogoutCallbackPath");
+            log.trace("isLogoutCallbackPath");
             if (isFrontChannel(facade)) {
                 log.trace("isFrontChannel");
                 handleFrontChannelLogoutRequest(facade);
@@ -88,7 +89,6 @@ final class LogoutHandler {
                 facade.authenticationFailed();
             }
         }
-        log.trace("## LogoutHandler returning FALSE from tryLogout");
         return false;
     }
 
@@ -118,11 +118,12 @@ final class LogoutHandler {
                     .addParameter(ID_TOKEN_HINT_PARAM, securityContext.getIDTokenString());
             String postLogoutPath = clientConfiguration.getPostLogoutPath();
             if (postLogoutPath != null) {
-                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM,
-                        getRedirectUri(facade) + postLogoutPath);
+                log.trace("post_logout_redirect_uri: " + postLogoutPath);
+                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM, postLogoutPath);
             }
 
             logoutUri = redirectUriBuilder.build().toString();
+            log.trace("redirectEndSessionEndpoint path: " + redirectUriBuilder.toString());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -133,8 +134,11 @@ final class LogoutHandler {
     }
 
     boolean tryBackChannelLogout(OidcHttpFacade facade) {
+        log.trace("tryBackChannelLogout entered");
         if (isLogoutCallbackPath(facade)) {
+            log.trace("isLogoutCallbackPath");
             if (isBackChannel(facade)) {
+                log.trace("isBackChannel");
                 handleBackChannelLogoutRequest(facade);
                 return true;
             }
@@ -223,7 +227,7 @@ final class LogoutHandler {
         return uri;
     }
 
-    boolean isLogoutCallbackPath(OidcHttpFacade facade) {
+    private boolean isLogoutCallbackPath(OidcHttpFacade facade) {
         String path = facade.getRequest().getRelativePath();
         return path.endsWith(getLogoutCallbackPath(facade));
     }

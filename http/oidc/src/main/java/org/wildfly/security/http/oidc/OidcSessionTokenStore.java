@@ -44,26 +44,21 @@ public class OidcSessionTokenStore implements OidcTokenStore {
 
     @Override
     public void checkCurrentToken() {
-        log.trace("## OidcSessionTokenStore.checkCurrentToken");
         HttpScope session = httpFacade.getScope(Scope.SESSION);
         if (session == null || ! session.exists()) {
-            log.trace("## OidcSessionTokenStore.checkCurrentToken  no session found");
             return;
         }
         RefreshableOidcSecurityContext securityContext = (RefreshableOidcSecurityContext) session.getAttachment(OidcSecurityContext.class.getName());
         if (securityContext == null) {
-            log.trace("## OidcSessionTokenStore.checkCurrentToken  no securityContext");
             return;
         }
 
         // just in case session got serialized
         if (securityContext.getOidcClientConfiguration() == null) {
-            log.trace("## OidcSessionTokenStore.checkCurrentToken  no OidcClientConfiguration set to current");
             securityContext.setCurrentRequestInfo(httpFacade.getOidcClientConfiguration(), this);
         }
 
         if (securityContext.isActive() && ! securityContext.getOidcClientConfiguration().isAlwaysRefreshToken()) {
-            log.trace("## OidcSessionTokenStore.checkCurrentToken  not isAlwaysRefreshToken");
             return;
         }
 
@@ -71,14 +66,12 @@ public class OidcSessionTokenStore implements OidcTokenStore {
         // not be updated
         boolean success = securityContext.refreshToken(false);
         if (success && securityContext.isActive()) {
-            log.trace("## OidcSessionTokenStore.checkCurrentToken  could not refresh token");
             return;
         }
 
         // Refresh failed, so user is already logged out from keycloak. Cleanup and expire our session
         session.setAttachment(OidcSecurityContext.class.getName(), null);
         session.invalidate();
-        log.trace("## OidcSessionTokenStore.checkCurrentToken invalidate session");
     }
 
     @Override
@@ -105,7 +98,6 @@ public class OidcSessionTokenStore implements OidcTokenStore {
 
         OidcClientConfiguration deployment = httpFacade.getOidcClientConfiguration();
         if (! checkCachedAccountMatchesRequest(account, deployment)) {
-            log.trace("## OidcSessionTokenStore.isCached no  CachedAccountMatchesRequest");
             return false;
         }
 
@@ -135,23 +127,20 @@ public class OidcSessionTokenStore implements OidcTokenStore {
 
     @Override
     public void saveAccountInfo(OidcAccount account) {
-        log.trace("## OidcSessionTokenStore.saveAccountInfo ");
         HttpScope session = this.httpFacade.getScope(Scope.SESSION);
         if (! session.exists()) {
             session.create();
-            log.trace("## OidcSessionTokenStore.saveAccountInfo create session");
             session.registerForNotification(httpScopeNotification -> {
                 if (! httpScopeNotification.isOfType(HttpScopeNotification.SessionNotificationType.UNDEPLOY)) {
                     HttpScope invalidated = httpScopeNotification.getScope(Scope.SESSION);
                     if (invalidated != null) {
-                        log.trace("## OidcSessionTokenStore.saveAccountInfo set attachement OidcAccount NULL");
                         invalidated.setAttachment(OidcAccount.class.getName(), null);
                         invalidated.setAttachment(OidcSecurityContext.class.getName(), null);
                     }
                 }
             });
         }
-        log.trace("## OidcSessionTokenStore.saveAccountInfo set session attachement OidcAccount to account");
+
         session.setAttachment(OidcAccount.class.getName(), account);
         session.setAttachment(OidcSecurityContext.class.getName(), account.getOidcSecurityContext());
 
@@ -167,30 +156,25 @@ public class OidcSessionTokenStore implements OidcTokenStore {
 
     @Override
     public void refreshCallback(RefreshableOidcSecurityContext securityContext) {
-        log.trace("## OidcSessionTokenStore.refreshCallback ");
         OidcPrincipal<RefreshableOidcSecurityContext> principal = new OidcPrincipal<>(securityContext.getIDToken().getPrincipalName(this.httpFacade.getOidcClientConfiguration()), securityContext);
         saveAccountInfo(new OidcAccount(principal));
     }
 
     @Override
     public void saveRequest() {
-        log.trace("## OidcSessionTokenStore.saveRequest ");
         this.httpFacade.suspendRequest();
     }
 
     @Override
     public boolean restoreRequest() {
-        log.trace("## OidcSessionTokenStore.restoreRequest ");
         return this.httpFacade.restoreRequest();
     }
 
     @Override
     public void logout(boolean glo) {
-        log.trace("## OidcSessionTokenStore.logout ");
         HttpScope session = this.httpFacade.getScope(Scope.SESSION);
 
         if (! session.exists()) {
-            log.trace("## OidcSessionTokenStore.logout  session does not exist");
             return;
         }
 
@@ -200,12 +184,10 @@ public class OidcSessionTokenStore implements OidcTokenStore {
             if (glo && securityContext != null) {
                 OidcClientConfiguration deployment = httpFacade.getOidcClientConfiguration();
                 session.invalidate();
-                log.trace("## OidcSessionTokenStore.logout invalidate session ");
                 if (! deployment.isBearerOnly() && securityContext != null && securityContext instanceof RefreshableOidcSecurityContext) {
                     ((RefreshableOidcSecurityContext) securityContext).logout(deployment);
                 }
             } else {
-                log.trace("## OidcSessionTokenStore.logout add session attachment OidcAccount as NULL ");
                 session.setAttachment(OidcAccount.class.getName(), null);
                 session.setAttachment(OidcSecurityContext.class.getName(), null);
             }
@@ -217,14 +199,12 @@ public class OidcSessionTokenStore implements OidcTokenStore {
 
     @Override
     public void logoutAll() {
-        log.trace("## OidcSessionTokenStore.logoutAll ");
         Collection<String> sessions = httpFacade.getScopeIds(Scope.SESSION);
         logoutHttpSessions(new ArrayList<>(sessions));
     }
 
     @Override
     public void logoutHttpSessions(List<String> ids) {
-        log.trace("## OidcSessionTokenStore.logoutHttpSessions  ids #: " + ids.size());
         for (String id : ids) {
             HttpScope session = httpFacade.getScope(Scope.SESSION, id);
             if (session != null) {

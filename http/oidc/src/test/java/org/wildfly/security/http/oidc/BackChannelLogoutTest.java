@@ -55,9 +55,10 @@ public class BackChannelLogoutTest extends AbstractLogoutTest {
     }
 
     @Test
-    public void testRPInitiatedLogout() throws Exception {
+    public void testBackChannelLogout() throws Exception {
         URI requestUri = new URI(getClientUrl());
         WebClient webClient = getWebClient();
+
         webClient.getPage(getClientUrl());
         TestingHttpServerResponse response = getCurrentResponse();
         assertEquals(HttpStatus.SC_MOVED_TEMPORARILY, response.getStatusCode());
@@ -73,8 +74,6 @@ public class BackChannelLogoutTest extends AbstractLogoutTest {
         // logged out after finishing the redirections during frontchannel logout
         assertUserAuthenticated();
         webClient.getPage(getClientUrl() + getClientConfig().getLogoutPath());
-        assertUserAuthenticated();
-        webClient.getPage(getClientUrl());
         assertUserNotAuthenticated();
     }
 }

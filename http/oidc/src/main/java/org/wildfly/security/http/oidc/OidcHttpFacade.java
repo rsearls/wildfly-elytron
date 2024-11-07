@@ -555,7 +555,6 @@ public class OidcHttpFacade {
     public String rlsGetSessionIds() {
         Collection<String> sessions = request.getScopeIds(Scope.SESSION);
         if (sessions == null) {
-            return "## OidcHttpFacade  Scope.SESSION sessionIds is null.";
         } else if (sessions.isEmpty()){
             return "Scope.SESSION sessionIds is empty.";
         }

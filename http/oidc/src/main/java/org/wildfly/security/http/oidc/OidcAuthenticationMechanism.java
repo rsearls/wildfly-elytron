@@ -60,8 +60,7 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
 
     @Override
     public void evaluateRequest(HttpServerRequest request) throws HttpAuthenticationException {
-        String tmpURI = request.getRequestURI().toString();
-        log.trace("## OidcAuthenticationMechanism tmpURI: " + tmpURI);
+        log.debug("evaluateRequest uri: " + request.getRequestURI().toString());
         OidcClientContext oidcClientContext = getOidcClientContext(request);
         if (oidcClientContext == null) {
             log.debugf("Ignoring request for path [%s] from mechanism [%s]. No client configuration context found.", request.getRequestURI(), getMechanismName());
@@ -92,12 +91,10 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
 
         AuthOutcome outcome = authenticator.authenticate();
         if (AuthOutcome.AUTHENTICATED.equals(outcome)) {
-            log.trace("## OidcAuthenticationMechanism AUTHENTICATED tmpURI: " + tmpURI);
             if (new AuthenticatedActionsHandler(oidcClientConfiguration, httpFacade).handledRequest()
                     || logoutHandler.tryLogout(httpFacade)) {
                 httpFacade.authenticationInProgress();
             } else {
-                log.trace("## OidcAuthenticationMechanism AUTHENTICATED authenticationComplete");
                 httpFacade.authenticationComplete();
             }
             return;
@@ -112,17 +109,14 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
 
         AuthChallenge challenge = authenticator.getChallenge();
         if (challenge != null) {
-            log.trace("## OidcAuthenticationMechanism noAuthenticationInProgress tmpURI: " + tmpURI);
             httpFacade.noAuthenticationInProgress(challenge);
             return;
         }
         if (Oidc.AuthOutcome.FAILED.equals(outcome)) {
             httpFacade.getResponse().setStatus(HttpStatus.SC_FORBIDDEN);
-            log.trace("## OidcAuthenticationMechanism authenticationFailed tmpURI: " + tmpURI);
             httpFacade.authenticationFailed();
             return;
         }
-        log.trace("## OidcAuthenticationMechanism noAuthenticationInProgress tmpURI: " + tmpURI);
         httpFacade.noAuthenticationInProgress();
     }
 

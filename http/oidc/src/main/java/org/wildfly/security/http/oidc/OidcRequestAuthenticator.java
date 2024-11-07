@@ -184,7 +184,6 @@ public class OidcRequestAuthenticator {
     protected String getRedirectUri(String state) {
         String url = getRequestUrl();
         log.debugf("callback uri: %s", url);
-        log.trace("## OidcRequestAuthenticator.getRedirectUri callback uri: " + url);
         try {
             if (! facade.getRequest().isSecure() && deployment.getSSLRequired().isRequired(facade.getRequest().getRemoteAddr())) {
                 int port = getSSLRedirectPort();
@@ -197,7 +196,6 @@ public class OidcRequestAuthenticator {
                     uriBuilder.setPort(port);
                 }
                 url = uriBuilder.build().toString();
-                log.trace("## OidcRequestAuthenticator.getRedirectUri reset url: " + url);
             }
 
             List<String> forwardableQueryParams = Arrays.asList(LOGIN_HINT, DOMAIN_HINT, KC_IDP_HINT, PROMPT, MAX_AGE, UI_LOCALES, SCOPE);
@@ -217,19 +215,16 @@ public class OidcRequestAuthenticator {
             }
 
             if (deployment.getAuthUrl() == null) {
-                log.trace("## OidcRequestAuthenticator.getRedirectUri getAuthUrl null");
                 return null;
             }
 
             String redirectUri = rewrittenRedirectUri(url);
-            log.trace("## OidcRequestAuthenticator.getRedirectUri rewrittenRedirectUri: " + redirectUri);
             URIBuilder redirectUriBuilder = new URIBuilder(deployment.getAuthUrl());
             redirectUriBuilder.addParameter(RESPONSE_TYPE, CODE)
                     .addParameter(CLIENT_ID, deployment.getResourceName());
 
             switch (deployment.getAuthenticationRequestFormat()) {
                 case REQUEST:
-                    log.trace("## OidcRequestAuthenticator.getRedirectUri switch REQUEST");
                     if (deployment.getRequestParameterSupported()) {
                         // add request objects into request parameter
                         try {
@@ -244,7 +239,6 @@ public class OidcRequestAuthenticator {
                     }
                     break;
                 case REQUEST_URI:
-                    log.trace("## OidcRequestAuthenticator.getRedirectUri switch REQUEST_URI");
                     if (deployment.getRequestUriParameterSupported()) {
                         try {
                             createRequestWithRequestParameter(REQUEST_URI, redirectUriBuilder, redirectUri, state, forwardedQueryParams);
@@ -258,7 +252,6 @@ public class OidcRequestAuthenticator {
                     }
                     break;
                 default:
-                    log.trace("## OidcRequestAuthenticator.getRedirectUri switch default");
                     createOAuthRequest(redirectUriBuilder, redirectUri, state, forwardedQueryParams);
                     break;
             }
@@ -306,7 +299,6 @@ public class OidcRequestAuthenticator {
         if (redirect == null) {
             return challenge(HttpStatus.SC_FORBIDDEN, AuthenticationError.Reason.NO_REDIRECT_URI, null);
         }
-        log.trace("## OidcRequestAuthenticator.loginRedirect redirect: " + redirect);
         return new AuthChallenge() {
 
             @Override
@@ -364,7 +356,6 @@ public class OidcRequestAuthenticator {
                 return Oidc.AuthOutcome.FAILED;
             } else {
                 log.debug("redirecting to auth server");
-                log.trace("## OidcRequestAuthenticator loginRedirect challenge set .. NOT_ATTEMPTED");
                 challenge = loginRedirect();
                 return Oidc.AuthOutcome.NOT_ATTEMPTED;
             }

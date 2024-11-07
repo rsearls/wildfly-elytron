@@ -55,7 +55,6 @@ public class RequestAuthenticator {
     public AuthOutcome authenticate() {
         AuthOutcome authenticate = doAuthenticate();
         if (AuthOutcome.AUTHENTICATED.equals(authenticate) && !facade.isAuthorized()) {
-            log.trace("## RequestAutenticator.authenticate AUTHENTICATED but NOT Autorized");
             return AuthOutcome.FAILED;
         }
         return authenticate;
@@ -128,7 +127,6 @@ public class RequestAuthenticator {
         }
 
         if (deployment.isEnableBasicAuth()) {
-            log.trace("## RequesAuthenticator isEnableBasicAuth TRUE");
             BasicAuthRequestAuthenticator basicAuth = new BasicAuthRequestAuthenticator(facade, deployment);
             if (log.isTraceEnabled()) {
                 log.trace("try basic auth");

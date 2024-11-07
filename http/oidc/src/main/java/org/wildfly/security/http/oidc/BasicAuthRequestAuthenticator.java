@@ -46,7 +46,6 @@ class BasicAuthRequestAuthenticator extends BearerTokenRequestAuthenticator {
         List<String> authorizationValues = facade.getRequest().getHeaders(HttpConstants.AUTHORIZATION);
         if (authorizationValues == null || authorizationValues.isEmpty()) {
             challenge = challengeResponse(AuthenticationError.Reason.NO_AUTHORIZATION_HEADER, null, null);
-            log.trace("## BasicAuthRequestAuthenticator NO_AUTHORIZATION_HEADER .. NOT_ATTEMPTED");
             return Oidc.AuthOutcome.NOT_ATTEMPTED;
         }
 
@@ -59,7 +58,6 @@ class BasicAuthRequestAuthenticator extends BearerTokenRequestAuthenticator {
         }
         if (basicValue == null) {
             challenge = challengeResponse(AuthenticationError.Reason.INVALID_TOKEN, null, null);
-            log.trace("## BasicAuthRequestAuthenticator null basicValue .. NOT_ATTEMPTED");
             return Oidc.AuthOutcome.NOT_ATTEMPTED;
         }
         byte[] decodedValue = ByteIterator.ofBytes(basicValue.getBytes(UTF_8)).asUtf8String().base64Decode().drain();
@@ -85,7 +83,6 @@ class BasicAuthRequestAuthenticator extends BearerTokenRequestAuthenticator {
             return Oidc.AuthOutcome.FAILED;
         }
         tokenString = tokenResponse.getAccessToken();
-        log.trace("## BasicAuthRequestAuthenticator return verifyToken .. BearerToken");
         return verifyToken(tokenString);
     }
 
