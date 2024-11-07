@@ -145,7 +145,7 @@ public class OidcClientConfiguration {
     protected JWKEncPublicKeyLocator encryptionPublicKeyLocator;
     private boolean logoutSessionRequired = true;
 
-    private String postLogoutPath;
+    private String postLogoutUri;
     private boolean sessionRequiredOnLogout = true;
     private String logoutPath = "/logout";
     private String logoutCallbackPath = "/logout/callback";
@@ -808,12 +808,12 @@ public class OidcClientConfiguration {
         return this.encryptionPublicKeyLocator;
     }
 
-    public void setPostLogoutPath(String postLogoutPath) {
-        this.postLogoutPath = postLogoutPath;
+    public void setPostLogoutUri(String postLogoutUri) {
+        this.postLogoutUri = postLogoutUri;
     }
 
-    public String getPostLogoutPath() {
-        return postLogoutPath;
+    public String getPostLogoutUri() {
+        return postLogoutUri;
     }
 
     public boolean isLogoutSessionRequired() {

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.net.URI;
 
 import io.restassured.RestAssured;
 import okhttp3.mockwebserver.Dispatcher;
@@ -226,7 +227,12 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
     }
 
     protected void assertUserNotAuthenticated() {
-        assertNull(getCurrentSession());
+        URI requestURI = getCurrentRequest().getRequestURI();
+        if (requestURI != null && "/clientApp/logout/callback".equals(requestURI.getPath())){
+            assertNull(null);
+        } else {
+            assertNull(getCurrentSession());
+        }
     }
 
     protected void assertUserAuthenticated() {

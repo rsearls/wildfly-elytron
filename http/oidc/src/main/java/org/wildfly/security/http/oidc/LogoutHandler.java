@@ -38,13 +38,13 @@ import org.wildfly.security.http.oidc.OidcHttpFacade.Request;
  */
 final class LogoutHandler {
 
-    public static final String POST_LOGOUT_REDIRECT_URI_PARAM = "post_logout_redirect_uri";
-    public static final String ID_TOKEN_HINT_PARAM = "id_token_hint";
+    private static final String POST_LOGOUT_REDIRECT_URI_PARAM = "post_logout_redirect_uri";
+    private static final String ID_TOKEN_HINT_PARAM = "id_token_hint";
     private static final String LOGOUT_TOKEN_PARAM = "logout_token";
     private static final String LOGOUT_TOKEN_TYPE = "Logout";
     private static final String CLIENT_ID_SID_SEPARATOR = "-";
-    public static final String SID = "sid";
-    public static final String ISS = "iss";
+    private static final String SID = "sid";
+    private static final String ISS = "iss";
 
     /**
      * A bounded map to store sessions marked for invalidation after receiving logout requests through the back-channel
@@ -63,7 +63,6 @@ final class LogoutHandler {
     });
 
     boolean tryLogout(OidcHttpFacade facade) {
-        log.trace("tryLogout entered");
         RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
         if (securityContext == null) {
             // no active session
@@ -95,6 +94,7 @@ final class LogoutHandler {
     boolean isSessionMarkedForInvalidation(OidcHttpFacade facade) {
         HttpScope session = facade.getScope(Scope.SESSION);
         if (session == null || ! session.exists()) return false;
+
         RefreshableOidcSecurityContext securityContext = (RefreshableOidcSecurityContext) session.getAttachment(OidcSecurityContext.class.getName());
         if (securityContext == null) {
             return false;
@@ -104,6 +104,7 @@ final class LogoutHandler {
         if (idToken == null) {
             return false;
         }
+
         return sessionsMarkedForInvalidation.remove(getSessionKey(facade, idToken.getSid())) != null;
     }
 
@@ -116,10 +117,10 @@ final class LogoutHandler {
         try {
             URIBuilder redirectUriBuilder = new URIBuilder(clientConfiguration.getEndSessionEndpointUrl())
                     .addParameter(ID_TOKEN_HINT_PARAM, securityContext.getIDTokenString());
-            String postLogoutPath = clientConfiguration.getPostLogoutPath();
-            if (postLogoutPath != null) {
-                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM,
-                        getRedirectUri(facade) + postLogoutPath);
+            String postLogoutUri = clientConfiguration.getPostLogoutUri();
+            if (postLogoutUri != null) {
+                log.trace("post_logout_redirect_uri: " + postLogoutUri);
+                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM, postLogoutUri);
             }
 
             logoutUri = redirectUriBuilder.build().toString();
@@ -134,7 +135,6 @@ final class LogoutHandler {
     }
 
     boolean tryBackChannelLogout(OidcHttpFacade facade) {
-        log.trace("tryBackChannelLogout entered");
         if (isLogoutCallbackPath(facade)) {
             log.trace("isLogoutCallbackPath");
             if (isBackChannel(facade)) {
@@ -157,7 +157,7 @@ final class LogoutHandler {
         try {
             claims = tokenValidator.verify(logoutToken);
         } catch (Exception cause) {
-            log.debug("Unexpected error when verifying logout token", cause);
+            log.debugf("Unexpected error when verifying logout token", cause);
             facade.getResponse().setStatus(HttpStatus.SC_BAD_REQUEST);
             facade.authenticationFailed();
             return;
@@ -178,7 +178,7 @@ final class LogoutHandler {
             return;
         }
 
-        log.debug("Marking session for invalidation during back-channel logout");
+        log.debugf("Marking session for invalidation during back-channel logout");
         sessionsMarkedForInvalidation.put(getSessionKey(facade, sessionId), facade.getOidcClientConfiguration());
     }
 
@@ -208,7 +208,7 @@ final class LogoutHandler {
             }
         }
 
-        log.debug("Invalidating session during front-channel logout");
+        log.debugf("Invalidating session during front-channel logout");
         facade.getTokenStore().logout(false);
     }
 
