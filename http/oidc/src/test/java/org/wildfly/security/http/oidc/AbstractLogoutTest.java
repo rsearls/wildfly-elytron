@@ -7,15 +7,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-
 package org.wildfly.security.http.oidc;
 
 import static org.junit.Assert.assertNotNull;
@@ -54,8 +53,6 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
 
     private ElytronDispatcher dispatcher;
     private OidcClientConfiguration clientConfig;
-    static boolean IS_BACK_CHANNEL_TEST = false;
-    static final String BACK_CHANNEL_LOGOUT_URL = "/logout/callback";
 
     @BeforeClass
     public static void onBeforeClass() {
@@ -76,11 +73,13 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
     }
 
     @Before
-    public void onBefore() throws IOException {
+    public void onBefore() throws Exception {
         OidcBaseTest.client = new MockWebServer();
         OidcBaseTest.client.start(new InetSocketAddress(0).getAddress(), CLIENT_PORT);
         configureDispatcher();
-        RealmRepresentation realm = KeycloakConfiguration.getRealmRepresentation(TEST_REALM, CLIENT_ID, CLIENT_SECRET, CLIENT_HOST_NAME, CLIENT_PORT, CLIENT_APP, CONFIGURE_CLIENT_SCOPES);
+        RealmRepresentation realm = KeycloakConfiguration.getRealmRepresentation(
+                TEST_REALM, CLIENT_ID, CLIENT_SECRET, CLIENT_HOST_NAME, CLIENT_PORT,
+                CLIENT_APP, false);
 
         realm.setAccessTokenLifespan(100);
         realm.setSsoSessionMaxLifespan(100);
@@ -164,7 +163,6 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
         public MockResponse dispatch(RecordedRequest serverRequest) throws InterruptedException {
             if (beforeDispatcher != null) {
                 MockResponse response = beforeDispatcher.dispatch(serverRequest);
-
                 if (response != null) {
                     return response;
                 }
@@ -173,11 +171,7 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
             MockResponse mockResponse = new MockResponse();
 
             try {
-                if (IS_BACK_CHANNEL_TEST && serverRequest.getRequestUrl().toString().endsWith(BACK_CHANNEL_LOGOUT_URL)) {
-                    currentRequest = new TestingHttpServerRequest(serverRequest, null);
-                } else {
-                    currentRequest = new TestingHttpServerRequest(serverRequest, sessionScope);
-                }
+                currentRequest = new TestingHttpServerRequest(serverRequest, sessionScope);
 
                 mechanism.evaluateRequest(currentRequest);
 
@@ -232,7 +226,7 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
     }
 
     protected void assertUserNotAuthenticated() {
-        assertNull(getCurrentSession().getAttachment(OidcAccount.class.getName()));
+        assertNull(getCurrentSession());
     }
 
     protected void assertUserAuthenticated() {

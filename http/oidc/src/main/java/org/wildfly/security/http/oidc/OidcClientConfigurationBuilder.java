@@ -25,6 +25,10 @@ import static org.wildfly.security.http.oidc.Oidc.AuthenticationRequestFormat.RE
 import static org.wildfly.security.http.oidc.Oidc.AuthenticationRequestFormat.REQUEST_URI;
 import static org.wildfly.security.http.oidc.Oidc.SSLRequired;
 import static org.wildfly.security.http.oidc.Oidc.TokenStore;
+import static org.wildfly.security.http.oidc.Oidc.LOGOUT_PATH;
+import static org.wildfly.security.http.oidc.Oidc.LOGOUT_CALLBACK_PATH;
+import static org.wildfly.security.http.oidc.Oidc.POST_LOGOUT_PATH;
+import static org.wildfly.security.http.oidc.Oidc.LOGOUT_SESSION_REQUIRED;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -195,6 +199,49 @@ public class OidcClientConfigurationBuilder {
 
         oidcClientConfiguration.setTokenSignatureAlgorithm(oidcJsonConfiguration.getTokenSignatureAlgorithm());
 
+        String tmpLogoutPath = System.getProperty(LOGOUT_PATH);
+        log.debug("sysProp LOGOUT_PATH: " + (tmpLogoutPath == null ? "NULL" : tmpLogoutPath));
+        if (tmpLogoutPath != null) {
+            if (isValidPath(tmpLogoutPath)) {
+                oidcClientConfiguration.setLogoutPath(tmpLogoutPath);
+            } else {
+                throw log.invalidLogoutPath(tmpLogoutPath, LOGOUT_PATH);
+            }
+        }
+
+
+        String tmpLogoutCallbackPath = System.getProperty(LOGOUT_CALLBACK_PATH);
+        log.debug("sysProp LOGOUT_CALLBACK_PATH: " + (tmpLogoutCallbackPath == null ? "NULL" : tmpLogoutCallbackPath));
+        if (tmpLogoutCallbackPath != null) {
+            if (isValidPath(tmpLogoutCallbackPath)
+                    && !tmpLogoutCallbackPath.endsWith(oidcClientConfiguration.getLogoutPath())) {
+                oidcClientConfiguration.setLogoutCallbackPath(tmpLogoutCallbackPath);
+            } else {
+                if (!isValidPath(tmpLogoutCallbackPath)) {
+                    throw log.invalidLogoutPath(tmpLogoutPath, LOGOUT_CALLBACK_PATH);
+                } else {
+                    throw log.invalidLogoutCallbackPath(LOGOUT_CALLBACK_PATH, tmpLogoutCallbackPath,
+                            LOGOUT_PATH, oidcClientConfiguration.getLogoutPath());
+                }
+            }
+        }
+
+        String tmpPostLogoutPath = System.getProperty(POST_LOGOUT_PATH);
+        log.debug("sysProp POST_LOGOUT_PATH: " + (tmpPostLogoutPath == null ? "NULL" : tmpPostLogoutPath));
+        if (tmpPostLogoutPath != null) {
+            if (isValidPath(tmpPostLogoutPath)) {
+                oidcClientConfiguration.setPostLogoutPath(tmpPostLogoutPath);
+            } else {
+                throw log.invalidLogoutPath(tmpLogoutPath, POST_LOGOUT_PATH);
+            }
+        }
+
+        String tmpLogoutSessionRequired = System.getProperty(LOGOUT_SESSION_REQUIRED);
+        if (tmpLogoutSessionRequired != null) {
+            oidcClientConfiguration.setLogoutSessionRequired(
+                    Boolean.valueOf(tmpLogoutSessionRequired));
+        }
+
         return oidcClientConfiguration;
     }
 
@@ -236,4 +283,11 @@ public class OidcClientConfigurationBuilder {
         return new OidcClientConfigurationBuilder().internalBuild(oidcJsonConfiguration);
     }
 
+    private boolean isValidPath(String path) {
+        String tmpPath = path.trim();
+        if (tmpPath.length() > 1 && tmpPath.startsWith("/")) {
+            return true;
+        }
+        return false;
+    }
 }

@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2022 Red Hat, Inc., and individual contributors
+ * Copyright 2024 Red Hat, Inc., and individual contributors
  * as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -212,7 +212,7 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
     }
 
     protected static Dispatcher createAppResponse(HttpServerAuthenticationMechanism mechanism, int expectedStatusCode, String expectedLocation, String clientPageText,
-                                                  Map<String, Object> attachments) {
+                                                  Map<String, Object> sessionScopeAttachments) {
         return new Dispatcher() {
             @Override
             public MockResponse dispatch(RecordedRequest recordedRequest) throws InterruptedException {
@@ -225,8 +225,8 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
                         TestingHttpServerResponse response = request.getResponse();
                         assertEquals(expectedStatusCode, response.getStatusCode());
                         assertEquals(expectedLocation, response.getLocation());
-                        for (String key : request.getAttachments().keySet()) {
-                            attachments.put(key, request.getAttachments().get(key));
+                        for (String key : request.getSessionScopeAttachments().keySet()) {
+                            sessionScopeAttachments.put(key, request.getSessionScopeAttachments().get(key));
                         }
                         return new MockResponse().setBody(clientPageText);
                     } catch (Exception e) {
@@ -240,7 +240,7 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
     }
 
     protected static Dispatcher createAppResponse(HttpServerAuthenticationMechanism mechanism, String clientPageText,
-                                                  Map<String, Object> attachments, String tenant, boolean sameTenant) {
+                                                  Map<String, Object> sessionScopeAttachments, String tenant, boolean sameTenant) {
         return new Dispatcher() {
             @Override
             public MockResponse dispatch(RecordedRequest recordedRequest) throws InterruptedException {
@@ -248,7 +248,7 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
                 if (path.contains("/" + CLIENT_APP + "/" + tenant)) {
                     try {
                         TestingHttpServerRequest request = new TestingHttpServerRequest(new String[0],
-                                new URI(recordedRequest.getRequestUrl().toString()), attachments);
+                                new URI(recordedRequest.getRequestUrl().toString()), sessionScopeAttachments);
                         mechanism.evaluateRequest(request);
                         TestingHttpServerResponse response = request.getResponse();
                         if (sameTenant) {
@@ -279,6 +279,7 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
         webClient.setJavaScriptErrorListener(new SilentJavaScriptErrorListener());
+        webClient.getOptions().setMaxInMemory(50000 * 1024);
         return webClient;
     }
 

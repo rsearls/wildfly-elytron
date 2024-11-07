@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source.
- * Copyright 2017 Red Hat, Inc., and individual contributors
+ * Copyright 2024 Red Hat, Inc., and individual contributors
  * as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +27,7 @@ import static org.wildfly.security.http.HttpConstants.WWW_AUTHENTICATE;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.cert.Certificate;
@@ -157,10 +155,9 @@ public class AbstractBaseHttpTest {
         private List<HttpServerCookie> cookies;
         private String requestMethod = "GET";
         private Map<String, List<String>> requestHeaders = new HashMap<>();
-        private Map<String, Object> attachments = new HashMap<>();
-        private Map<Scope, HttpScope> scopes = new HashMap<>();
-        private HttpScope sessionScope;
         private X500Principal testPrincipal = null;
+        private Map<String, Object> sessionScopeAttachments = new HashMap<>();
+        private HttpScope sessionScope;
 
         public TestingHttpServerRequest(String[] authorization) {
             if (authorization != null) {
@@ -188,14 +185,14 @@ public class AbstractBaseHttpTest {
             this.cookies = new ArrayList<>();
         }
 
-        public TestingHttpServerRequest(String[] authorization, URI requestURI, Map<String, Object> attachments) {
+        public TestingHttpServerRequest(String[] authorization, URI requestURI, Map<String, Object> sessionScopeAttachments) {
             if (authorization != null) {
                 requestHeaders.put(AUTHORIZATION, Arrays.asList(authorization));
             }
             this.remoteUser = null;
             this.requestURI = requestURI;
             this.cookies = new ArrayList<>();
-            this.attachments = attachments;
+            this.sessionScopeAttachments = sessionScopeAttachments;
         }
 
         public TestingHttpServerRequest(String[] authorization, URI requestURI, List<HttpServerCookie> cookies) {
@@ -216,10 +213,6 @@ public class AbstractBaseHttpTest {
         }
 
         public TestingHttpServerRequest(String[] authorization, URI requestURI, String cookie) {
-            this(authorization, requestURI, cookie, null);
-        }
-
-        public TestingHttpServerRequest(String[] authorization, URI requestURI, String cookie, HttpScope sessionScope) {
             if (authorization != null) {
                 requestHeaders.put(AUTHORIZATION, Arrays.asList(authorization));
             }
@@ -231,14 +224,14 @@ public class AbstractBaseHttpTest {
                 final String cookieValue = cookie.substring(cookie.indexOf('=') + 1);
                 cookies.add(HttpServerCookie.getInstance(cookieName, cookieValue, null, -1, "/", false, 0, true));
             }
-            this.sessionScope = sessionScope;
         }
 
-        public TestingHttpServerRequest(RecordedRequest serverRequest, HttpScope sessionScope) throws URISyntaxException {
-            this(new String[0], new URI(serverRequest.getRequestUrl().toString()), serverRequest.getHeader("Cookie"), sessionScope);
-            this.requestMethod = serverRequest.getMethod();
-            this.body = serverRequest.getBody().readUtf8();
-            this.contentType = serverRequest.getHeader("Content-Type");
+        public TestingHttpServerRequest(RecordedRequest request, HttpScope sessionScope) {
+            this(new String[0], request.getRequestUrl().uri(), request.getHeader("Cookie"));
+            this.requestMethod = request.getMethod();
+            this.body = request.getBody().readUtf8();
+            this.contentType = request.getHeader("Content-Type");
+            this.sessionScope = sessionScope;
         }
 
         public Status getResult() {
@@ -312,11 +305,7 @@ public class AbstractBaseHttpTest {
         }
 
         public String getRequestPath() {
-            try {
-                return requestURI.toURL().getPath();
-            } catch (MalformedURLException cause) {
-                throw new RuntimeException("Mal-formed request URL", cause);
-            }
+            return requestURI.getPath();
         }
 
         public Map<String, List<String>> getParameters() {
@@ -369,54 +358,53 @@ public class AbstractBaseHttpTest {
         }
 
         public HttpScope getScope(Scope scope) {
-            if (scope.equals(Scope.SSL_SESSION)) {
+            if (requestURI != null && "/clientApp/logout/callback".equals(requestURI.getPath())){
                 return null;
             }
-
-            if (Scope.SESSION.equals(scope) && sessionScope != null) {
+            if (scope.equals(Scope.SSL_SESSION)) {
+                return null;
+            } else if (sessionScope != null) {
                 return sessionScope;
             }
 
-            HttpScope httpScope = scopes.get(scope);
+            return new HttpScope() {
 
-            if (httpScope == null) {
-                return new HttpScope() {
+                @Override
+                public boolean exists() {
+                    return true;
+                }
 
-                    @Override
-                    public boolean exists() {
-                        return true;
+                @Override
+                public boolean create() {
+                    return false;
+                }
+
+                @Override
+                public boolean supportsAttachments() {
+                    return true;
+                }
+
+                @Override
+                public boolean supportsInvalidation() {
+                    return false;
+                }
+
+                @Override
+                public void setAttachment(String key, Object value) {
+                    if (scope.equals(Scope.SESSION)) {
+                        sessionScopeAttachments.put(key, value);
                     }
+                }
 
-                    @Override
-                    public boolean create() {
-                        return false;
+                @Override
+                public Object getAttachment(String key) {
+                    if (scope.equals(Scope.SESSION)) {
+                        return sessionScopeAttachments.get(key);
+                    } else {
+                        return null;
                     }
-
-                    @Override
-                    public boolean supportsAttachments() {
-                        return true;
-                    }
-
-                    @Override
-                    public boolean supportsInvalidation() {
-                        return true;
-                    }
-
-                    @Override
-                    public void setAttachment(String key, Object value) {
-                        attachments.put(key, value);
-                    }
-
-                    @Override
-                    public Object getAttachment(String key) {
-                        return attachments.get(key);
-                    }
-
-                };
-            }
-            scopes.put(scope, httpScope);
-
-            return httpScope;
+                }
+            };
         }
 
         public Collection<String> getScopeIds(Scope scope) {
@@ -424,10 +412,7 @@ public class AbstractBaseHttpTest {
         }
 
         public HttpScope getScope(Scope scope, String id) {
-            if (Scope.SESSION.equals(scope) && sessionScope != null) {
-                return sessionScope;
-            }
-            return scopes.get(scope);
+            throw new IllegalStateException();
         }
 
         public void setRemoteUser(String remoteUser) {
@@ -439,8 +424,8 @@ public class AbstractBaseHttpTest {
             return remoteUser;
         }
 
-        public Map<String, Object> getAttachments() {
-            return attachments;
+        public Map<String, Object> getSessionScopeAttachments() {
+            return sessionScopeAttachments;
         }
     }
 

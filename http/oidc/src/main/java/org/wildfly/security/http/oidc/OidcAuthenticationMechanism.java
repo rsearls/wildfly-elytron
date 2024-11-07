@@ -42,6 +42,7 @@ import org.wildfly.security.http.Scope;
 final class OidcAuthenticationMechanism implements HttpServerAuthenticationMechanism {
 
     private static LogoutHandler logoutHandler = new LogoutHandler();
+
     private final Map<String, ?> properties;
     private final CallbackHandler callbackHandler;
     private final OidcClientContext oidcClientContext;
@@ -59,6 +60,7 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
 
     @Override
     public void evaluateRequest(HttpServerRequest request) throws HttpAuthenticationException {
+        log.debug("evaluateRequest uri: " + request.getRequestURI().toString());
         OidcClientContext oidcClientContext = getOidcClientContext(request);
         if (oidcClientContext == null) {
             log.debugf("Ignoring request for path [%s] from mechanism [%s]. No client configuration context found.", request.getRequestURI(), getMechanismName());
@@ -74,6 +76,11 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
         }
 
         RequestAuthenticator authenticator = createRequestAuthenticator(httpFacade, oidcClientConfiguration);
+        if (logoutHandler.isSessionMarkedForInvalidation(httpFacade)) {
+            // session marked for invalidation, invalidate it
+            log.debug("Invalidating pending logout session");
+            httpFacade.getTokenStore().logout(false);
+        }
         httpFacade.getTokenStore().checkCurrentToken();
         if ((oidcClientConfiguration.getAuthServerBaseUrl() != null && keycloakPreActions(httpFacade, oidcClientConfiguration))
                 || preflightCors(httpFacade, oidcClientConfiguration)) {
@@ -84,7 +91,8 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
 
         AuthOutcome outcome = authenticator.authenticate();
         if (AuthOutcome.AUTHENTICATED.equals(outcome)) {
-            if (new AuthenticatedActionsHandler(oidcClientConfiguration, httpFacade).handledRequest() || logoutHandler.tryLogout(httpFacade)) {
+            if (new AuthenticatedActionsHandler(oidcClientConfiguration, httpFacade).handledRequest()
+                    || logoutHandler.tryLogout(httpFacade)) {
                 httpFacade.authenticationInProgress();
             } else {
                 httpFacade.authenticationComplete();
