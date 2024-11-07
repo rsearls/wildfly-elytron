@@ -200,6 +200,7 @@ public class OidcClientConfigurationBuilder {
         oidcClientConfiguration.setTokenSignatureAlgorithm(oidcJsonConfiguration.getTokenSignatureAlgorithm());
 
         String tmpLogoutPath = System.getProperty(LOGOUT_PATH);
+        log.debug("sysProp LOGOUT_PATH: " + (tmpLogoutPath == null ? "NULL" : tmpLogoutPath));
         if (tmpLogoutPath != null) {
             if (isValidPath(tmpLogoutPath)) {
                 oidcClientConfiguration.setLogoutPath(tmpLogoutPath);
@@ -210,6 +211,7 @@ public class OidcClientConfigurationBuilder {
 
 
         String tmpLogoutCallbackPath = System.getProperty(LOGOUT_CALLBACK_PATH);
+        log.debug("sysProp LOGOUT_CALLBACK_PATH: " + (tmpLogoutCallbackPath == null ? "NULL" : tmpLogoutCallbackPath));
         if (tmpLogoutCallbackPath != null) {
             if (isValidPath(tmpLogoutCallbackPath)
                     && !tmpLogoutCallbackPath.endsWith(oidcClientConfiguration.getLogoutPath())) {
@@ -225,6 +227,7 @@ public class OidcClientConfigurationBuilder {
         }
 
         String tmpPostLogoutPath = System.getProperty(POST_LOGOUT_PATH);
+        log.debug("sysProp POST_LOGOUT_PATH: " + (tmpPostLogoutPath == null ? "NULL" : tmpPostLogoutPath));
         if (tmpPostLogoutPath != null) {
             if (isValidPath(tmpPostLogoutPath)) {
                 oidcClientConfiguration.setPostLogoutPath(tmpPostLogoutPath);

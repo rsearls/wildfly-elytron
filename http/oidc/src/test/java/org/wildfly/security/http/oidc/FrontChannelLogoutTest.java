@@ -49,10 +49,9 @@ public class FrontChannelLogoutTest extends AbstractLogoutTest {
         client.setFrontchannelLogout(true);
         List<String> redirectUris = client.getRedirectUris();
         String redirectUri = redirectUris.get(0);
-
-        OidcClientConfiguration ocConfig = new OidcClientConfiguration();
+        OidcClientConfiguration config = new OidcClientConfiguration();
         client.getAttributes().put("frontchannel.logout.url", redirectUri
-                + ocConfig.getLogoutCallbackPath());
+                + config.getLogoutCallbackPath());
     }
 
     @Test
@@ -101,7 +100,7 @@ public class FrontChannelLogoutTest extends AbstractLogoutTest {
         assertTrue(page.getWebResponse().getContentAsString().contains("Welcome, authenticated user"));
 
         assertUserAuthenticated();
-        HtmlPage continueLogout = webClient.getPage(getClientUrl() + "/logout");
+        HtmlPage continueLogout = webClient.getPage(getClientUrl() + getClientConfig().getLogoutPath());
         page = continueLogout.getElementById("continue").click();
         assertUserNotAuthenticated();
         assertTrue(page.getWebResponse().getContentAsString().contains("you are logged out from app"));

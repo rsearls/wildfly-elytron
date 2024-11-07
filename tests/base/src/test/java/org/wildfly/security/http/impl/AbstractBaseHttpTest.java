@@ -358,6 +358,9 @@ public class AbstractBaseHttpTest {
         }
 
         public HttpScope getScope(Scope scope) {
+            if (requestURI != null && "/clientApp/logout/callback".equals(requestURI.getPath())){
+                return null;
+            }
             if (scope.equals(Scope.SSL_SESSION)) {
                 return null;
             } else if (sessionScope != null) {

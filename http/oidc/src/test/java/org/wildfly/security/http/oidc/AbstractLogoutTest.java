@@ -77,7 +77,9 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
         OidcBaseTest.client = new MockWebServer();
         OidcBaseTest.client.start(new InetSocketAddress(0).getAddress(), CLIENT_PORT);
         configureDispatcher();
-        RealmRepresentation realm = KeycloakConfiguration.getRealmRepresentation(TEST_REALM, CLIENT_ID, CLIENT_SECRET, CLIENT_HOST_NAME, CLIENT_PORT, CLIENT_APP, false);
+        RealmRepresentation realm = KeycloakConfiguration.getRealmRepresentation(
+                TEST_REALM, CLIENT_ID, CLIENT_SECRET, CLIENT_HOST_NAME, CLIENT_PORT,
+                CLIENT_APP, false);
 
         realm.setAccessTokenLifespan(100);
         realm.setSsoSessionMaxLifespan(100);
@@ -161,7 +163,6 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
         public MockResponse dispatch(RecordedRequest serverRequest) throws InterruptedException {
             if (beforeDispatcher != null) {
                 MockResponse response = beforeDispatcher.dispatch(serverRequest);
-
                 if (response != null) {
                     return response;
                 }
@@ -225,7 +226,7 @@ public abstract class AbstractLogoutTest extends OidcBaseTest {
     }
 
     protected void assertUserNotAuthenticated() {
-        assertNull(getCurrentSession().getAttachment(OidcAccount.class.getName()));
+        assertNull(getCurrentSession());
     }
 
     protected void assertUserAuthenticated() {

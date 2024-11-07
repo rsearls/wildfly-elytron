@@ -63,19 +63,24 @@ final class LogoutHandler {
     });
 
     boolean tryLogout(OidcHttpFacade facade) {
+        log.trace("tryLogout entered");
         RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
         if (securityContext == null) {
             // no active session
+            log.trace("tryLogout securityContext == null");
             return false;
         }
 
         if (isRpInitiatedLogoutPath(facade)) {
+            log.trace("isRpInitiatedLogoutPath");
             redirectEndSessionEndpoint(facade);
             return true;
         }
 
         if (isLogoutCallbackPath(facade)) {
+            log.trace("isLogoutCallbackPath");
             if (isFrontChannel(facade)) {
+                log.trace("isFrontChannel");
                 handleFrontChannelLogoutRequest(facade);
                 return true;
             } else {
@@ -84,7 +89,6 @@ final class LogoutHandler {
                 facade.authenticationFailed();
             }
         }
-
         return false;
     }
 
@@ -119,6 +123,7 @@ final class LogoutHandler {
             }
 
             logoutUri = redirectUriBuilder.build().toString();
+            log.trace("redirectEndSessionEndpoint path: " + redirectUriBuilder.toString());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -129,8 +134,11 @@ final class LogoutHandler {
     }
 
     boolean tryBackChannelLogout(OidcHttpFacade facade) {
+        log.trace("tryBackChannelLogout entered");
         if (isLogoutCallbackPath(facade)) {
+            log.trace("isLogoutCallbackPath");
             if (isBackChannel(facade)) {
+                log.trace("isBackChannel");
                 handleBackChannelLogoutRequest(facade);
                 return true;
             }
@@ -219,7 +227,7 @@ final class LogoutHandler {
         return uri;
     }
 
-    boolean isLogoutCallbackPath(OidcHttpFacade facade) {
+    private boolean isLogoutCallbackPath(OidcHttpFacade facade) {
         String path = facade.getRequest().getRelativePath();
         return path.endsWith(getLogoutCallbackPath(facade));
     }
