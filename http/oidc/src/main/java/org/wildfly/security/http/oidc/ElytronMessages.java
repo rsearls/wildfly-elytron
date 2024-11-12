@@ -278,5 +278,12 @@ interface ElytronMessages extends BasicLogger {
 
     @Message(id = 23070, value = "Authentication request format must be one of the following: oauth2, request, request_uri.")
     RuntimeException invalidAuthenticationRequestFormat();
+
+    @Message(id = 23071, value = "%s is not a valid value for %s")
+    RuntimeException invalidLogoutPath(String pathValue, String pathName);
+
+    @Message(id = 23072, value = "The end substring of %s: %s can not be identical to %s: %s")
+    RuntimeException invalidLogoutCallbackPath(String callbackPathTitle, String callbacPathkValue,
+                                               String logoutPathTitle, String logoutPathValue);
 }
 
