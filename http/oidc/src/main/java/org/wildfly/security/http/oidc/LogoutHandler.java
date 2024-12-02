@@ -64,26 +64,30 @@ final class LogoutHandler {
 
         if (securityContext == null) {
             // no active session
+            log.trace("## LogoutHandler.tryLogout securityContext is null");
             return false;
         }
 
         if (isSessionMarkedForInvalidation(facade)) {
             // session marked for invalidation, invalidate it
+            log.trace("## LogoutHandler.tryLogout isSessionMarkedForInvalidation");
             log.debug("Invalidating pending logout session");
             facade.getTokenStore().logout(false);
             return true;
         }
 
         if (isRpInitiatedLogoutPath(facade)) {
+            log.trace("## LogoutHandler.tryLogout isRpInitiatedLogoutPath");
             redirectEndSessionEndpoint(facade);
             return true;
         }
 
         if (isLogoutCallbackPath(facade)) {
+            log.trace("## LogoutHandler.tryLogout isLogoutCallbackPath");
             handleLogoutRequest(facade);
             return true;
         }
-
+        log.trace("## LogoutHandler returning FALSE from tryLogout");
         return false;
     }
 
