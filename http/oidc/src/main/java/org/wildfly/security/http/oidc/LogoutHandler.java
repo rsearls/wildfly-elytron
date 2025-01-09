@@ -29,6 +29,8 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.utils.URIBuilder;
 import org.jose4j.jwt.JwtClaims;
 import org.wildfly.security.http.HttpConstants;
+import org.wildfly.security.http.HttpScope;
+import org.wildfly.security.http.Scope;
 import org.wildfly.security.http.oidc.OidcHttpFacade.Request;
 
 /**
@@ -40,6 +42,7 @@ final class LogoutHandler {
     public static final String ID_TOKEN_HINT_PARAM = "id_token_hint";
     private static final String LOGOUT_TOKEN_PARAM = "logout_token";
     private static final String LOGOUT_TOKEN_TYPE = "Logout";
+    private static final String CLIENT_ID_SID_SEPARATOR = "-";
     public static final String SID = "sid";
     public static final String ISS = "iss";
 
@@ -61,19 +64,10 @@ final class LogoutHandler {
 
     boolean tryLogout(OidcHttpFacade facade) {
         RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
-
         if (securityContext == null) {
             // no active session
             log.trace("## LogoutHandler.tryLogout securityContext is null");
             return false;
-        }
-
-        if (isSessionMarkedForInvalidation(facade)) {
-            // session marked for invalidation, invalidate it
-            log.trace("## LogoutHandler.tryLogout isSessionMarkedForInvalidation");
-            log.debug("Invalidating pending logout session");
-            facade.getTokenStore().logout(false);
-            return true;
         }
 
         if (isRpInitiatedLogoutPath(facade)) {
@@ -91,15 +85,19 @@ final class LogoutHandler {
         return false;
     }
 
-    private boolean isSessionMarkedForInvalidation(OidcHttpFacade facade) {
-        RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
+    boolean isSessionMarkedForInvalidation(OidcHttpFacade facade) {
+        HttpScope session = facade.getScope(Scope.SESSION);
+        if (session == null || ! session.exists()) return false;
+        RefreshableOidcSecurityContext securityContext = (RefreshableOidcSecurityContext) session.getAttachment(OidcSecurityContext.class.getName());
+        if (securityContext == null) {
+            return false;
+        }
         IDToken idToken = securityContext.getIDToken();
 
         if (idToken == null) {
             return false;
         }
-
-        return sessionsMarkedForInvalidation.remove(idToken.getSid()) != null;
+        return sessionsMarkedForInvalidation.remove(getSessionKey(facade, idToken.getSid())) != null;
     }
 
     private void redirectEndSessionEndpoint(OidcHttpFacade facade) {
@@ -127,20 +125,17 @@ final class LogoutHandler {
         facade.getResponse().setHeader(HttpConstants.LOCATION, logoutUri);
     }
 
-    private void handleLogoutRequest(OidcHttpFacade facade) {
-        if (isFrontChannel(facade)) {
-            handleFrontChannelLogoutRequest(facade);
-        } else if (isBackChannel(facade)) {
-            handleBackChannelLogoutRequest(facade);
-        } else {
-            // logout requests should arrive either as a HTTP GET or POST
-            facade.getResponse().setStatus(HttpStatus.SC_METHOD_NOT_ALLOWED);
-            facade.authenticationFailed();
+    boolean tryBackChannelLogout(OidcHttpFacade facade) {
+        if (isLogoutCallbackPath(facade)) {
+            if (isBackChannel(facade)) {
+                handleBackChannelLogoutRequest(facade);
+                return true;
+            }
         }
+        return false;
     }
 
     private void handleBackChannelLogoutRequest(OidcHttpFacade facade) {
-        RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
         String logoutToken = facade.getRequest().getFirstParam(LOGOUT_TOKEN_PARAM);
         TokenValidator tokenValidator = TokenValidator.builder(facade.getOidcClientConfiguration())
                 .setSkipExpirationValidator()
@@ -173,7 +168,11 @@ final class LogoutHandler {
         }
 
         log.debug("Marking session for invalidation during back-channel logout");
-        sessionsMarkedForInvalidation.put(sessionId, securityContext.getOidcClientConfiguration());
+        sessionsMarkedForInvalidation.put(getSessionKey(facade, sessionId), facade.getOidcClientConfiguration());
+    }
+
+    private String getSessionKey(OidcHttpFacade facade, String sessionId) {
+        return facade.getOidcClientConfiguration().getClientId() + CLIENT_ID_SID_SEPARATOR + sessionId;
     }
 
     private void handleFrontChannelLogoutRequest(OidcHttpFacade facade) {
@@ -217,9 +216,8 @@ final class LogoutHandler {
         return uri;
     }
 
-    private boolean isLogoutCallbackPath(OidcHttpFacade facade) {
+    boolean isLogoutCallbackPath(OidcHttpFacade facade) {
         String path = facade.getRequest().getRelativePath();
-        String xx = getLogoutCallbackPath(facade); // rls debug only
         return path.endsWith(getLogoutCallbackPath(facade));
     }
 
@@ -229,17 +227,7 @@ final class LogoutHandler {
     }
 
     private boolean isSessionRequiredOnLogout(OidcHttpFacade facade) {
-        return getOidcClientConfiguration(facade).isSessionRequiredOnLogout();
-    }
-
-    private OidcClientConfiguration getOidcClientConfiguration(OidcHttpFacade facade) {
-        RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
-
-        if (securityContext == null) {
-            return null;
-        }
-
-        return securityContext.getOidcClientConfiguration();
+        return facade.getOidcClientConfiguration().isSessionRequiredOnLogout();
     }
 
     private RefreshableOidcSecurityContext getSecurityContext(OidcHttpFacade facade) {
@@ -255,10 +243,10 @@ final class LogoutHandler {
     }
 
     private String getLogoutPath(OidcHttpFacade facade) {
-        return getOidcClientConfiguration(facade).getLogoutPath();
+        return facade.getOidcClientConfiguration().getLogoutPath();
     }
     private String getLogoutCallbackPath(OidcHttpFacade facade) {
-        return getOidcClientConfiguration(facade).getLogoutCallbackPath();
+        return facade.getOidcClientConfiguration().getLogoutCallbackPath();
     }
 
     private boolean isBackChannel(OidcHttpFacade facade) {

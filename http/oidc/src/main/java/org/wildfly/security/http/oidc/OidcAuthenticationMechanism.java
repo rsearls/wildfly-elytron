@@ -77,6 +77,11 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
         }
 
         RequestAuthenticator authenticator = createRequestAuthenticator(httpFacade, oidcClientConfiguration);
+        if (logoutHandler.isSessionMarkedForInvalidation(httpFacade)) {
+            // session marked for invalidation, invalidate it
+            log.debug("Invalidating pending logout session");
+            httpFacade.getTokenStore().logout(false);
+        }
         httpFacade.getTokenStore().checkCurrentToken();
         if ((oidcClientConfiguration.getAuthServerBaseUrl() != null && keycloakPreActions(httpFacade, oidcClientConfiguration))
                 || preflightCors(httpFacade, oidcClientConfiguration)) {
@@ -89,8 +94,7 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
         if (AuthOutcome.AUTHENTICATED.equals(outcome)) {
             log.trace("## OidcAuthenticationMechanism AUTHENTICATED tmpURI: " + tmpURI);
             if (new AuthenticatedActionsHandler(oidcClientConfiguration, httpFacade).handledRequest()
-            ) {
-                log.trace("## OidcAuthenticationMechanism AUTHENTICATED authenticationInProgress");
+                    || logoutHandler.tryLogout(httpFacade)) {
                 httpFacade.authenticationInProgress();
             } else {
                 log.trace("## OidcAuthenticationMechanism AUTHENTICATED authenticationComplete");
@@ -98,7 +102,14 @@ final class OidcAuthenticationMechanism implements HttpServerAuthenticationMecha
             }
             return;
         }
-        log.trace("## OidcAuthenticationMechanism after AUTHENTICATED tmpURI: " + tmpURI);
+
+        if (AuthOutcome.NOT_ATTEMPTED.equals(outcome)) {
+            if (logoutHandler.tryBackChannelLogout(httpFacade)) {
+                httpFacade.authenticationInProgress();
+                return;
+            }
+        }
+
         AuthChallenge challenge = authenticator.getChallenge();
         if (challenge != null) {
             log.trace("## OidcAuthenticationMechanism noAuthenticationInProgress tmpURI: " + tmpURI);

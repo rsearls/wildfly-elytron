@@ -37,7 +37,6 @@ import java.util.List;
  */
 public class AuthenticatedActionsHandler {
 
-    private static LogoutHandler logoutHandler = new LogoutHandler();
     private OidcClientConfiguration deployment;
     private OidcHttpFacade facade;
 
@@ -55,11 +54,7 @@ public class AuthenticatedActionsHandler {
             queryBearerToken();
             return true;
         }
-        log.trace("## AuthenticatedActionsHandler.handledRequest  before logoutHandler.tryLogout");
-        if (logoutHandler.tryLogout(facade)) {
-            return true;
-        }
-        log.trace("## AuthenticatedActionsHandler.handledRequest  after logoutHandler.tryLogout");
+
         return false;
     }
 
