@@ -78,8 +78,15 @@ final class LogoutHandler {
 
         if (isLogoutCallbackPath(facade)) {
             log.trace("## LogoutHandler.tryLogout isLogoutCallbackPath");
-            handleLogoutRequest(facade);
-            return true;
+            if (isFrontChannel(facade)) {
+                log.trace("isFrontChannel");
+                handleFrontChannelLogoutRequest(facade);
+                return true;
+            } else {
+                // we have an active session, should have received a GET logout request
+                facade.getResponse().setStatus(HttpStatus.SC_METHOD_NOT_ALLOWED);
+                facade.authenticationFailed();
+            }
         }
         log.trace("## LogoutHandler returning FALSE from tryLogout");
         return false;
