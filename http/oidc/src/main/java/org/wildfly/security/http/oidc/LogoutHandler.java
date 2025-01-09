@@ -118,8 +118,8 @@ final class LogoutHandler {
                     .addParameter(ID_TOKEN_HINT_PARAM, securityContext.getIDTokenString());
             String postLogoutPath = clientConfiguration.getPostLogoutPath();
             if (postLogoutPath != null) {
-                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM,
-                        getRedirectUri(facade) + postLogoutPath);
+                log.trace("post_logout_redirect_uri: " + postLogoutPath);
+                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM, postLogoutPath);
             }
 
             logoutUri = redirectUriBuilder.build().toString();

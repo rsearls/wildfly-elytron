@@ -218,7 +218,7 @@ public class OidcClientConfigurationBuilder {
                 oidcClientConfiguration.setLogoutCallbackPath(tmpLogoutCallbackPath);
             } else {
                 if (!isValidPath(tmpLogoutCallbackPath)) {
-                    throw log.invalidLogoutPath(tmpLogoutPath, LOGOUT_CALLBACK_PATH);
+                    throw log.invalidLogoutPath(tmpLogoutCallbackPath, LOGOUT_CALLBACK_PATH);
                 } else {
                     throw log.invalidLogoutCallbackPath(LOGOUT_CALLBACK_PATH, tmpLogoutCallbackPath,
                             LOGOUT_PATH, oidcClientConfiguration.getLogoutPath());
@@ -229,10 +229,10 @@ public class OidcClientConfigurationBuilder {
         String tmpPostLogoutPath = System.getProperty(POST_LOGOUT_PATH);
         log.debug("sysProp POST_LOGOUT_PATH: " + (tmpPostLogoutPath == null ? "NULL" : tmpPostLogoutPath));
         if (tmpPostLogoutPath != null) {
-            if (isValidPath(tmpPostLogoutPath)) {
+            if (isValidPath(tmpPostLogoutPath) || tmpPostLogoutPath.startsWith("http")) {
                 oidcClientConfiguration.setPostLogoutPath(tmpPostLogoutPath);
             } else {
-                throw log.invalidLogoutPath(tmpLogoutPath, POST_LOGOUT_PATH);
+                throw log.invalidLogoutPath(tmpPostLogoutPath, POST_LOGOUT_PATH);
             }
         }
 
