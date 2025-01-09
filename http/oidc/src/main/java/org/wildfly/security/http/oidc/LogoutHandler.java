@@ -66,25 +66,22 @@ final class LogoutHandler {
         RefreshableOidcSecurityContext securityContext = getSecurityContext(facade);
         if (securityContext == null) {
             // no active session
+            log.trace("## LogoutHandler.tryLogout securityContext is null");
             return false;
         }
 
         if (isRpInitiatedLogoutPath(facade)) {
+            log.trace("## LogoutHandler.tryLogout isRpInitiatedLogoutPath");
             redirectEndSessionEndpoint(facade);
             return true;
         }
 
         if (isLogoutCallbackPath(facade)) {
-            if (isFrontChannel(facade)) {
-                handleFrontChannelLogoutRequest(facade);
-                return true;
-            } else {
-                // we have an active session, should have received a GET logout request
-                facade.getResponse().setStatus(HttpStatus.SC_METHOD_NOT_ALLOWED);
-                facade.authenticationFailed();
-            }
+            log.trace("## LogoutHandler.tryLogout isLogoutCallbackPath");
+            handleLogoutRequest(facade);
+            return true;
         }
-
+        log.trace("## LogoutHandler returning FALSE from tryLogout");
         return false;
     }
 

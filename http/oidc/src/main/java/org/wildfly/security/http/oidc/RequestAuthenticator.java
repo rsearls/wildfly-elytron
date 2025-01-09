@@ -128,6 +128,7 @@ public class RequestAuthenticator {
         }
 
         if (deployment.isEnableBasicAuth()) {
+            log.trace("## RequesAuthenticator isEnableBasicAuth TRUE");
             BasicAuthRequestAuthenticator basicAuth = new BasicAuthRequestAuthenticator(facade, deployment);
             if (log.isTraceEnabled()) {
                 log.trace("try basic auth");

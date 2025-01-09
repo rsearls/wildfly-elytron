@@ -47,6 +47,7 @@ public class AuthenticatedActionsHandler {
 
     public boolean handledRequest() {
         log.debugv("AuthenticatedActionsValve.invoke {0}", facade.getRequest().getURI());
+        log.trace("## AuthenticatedActionsHandler.handledRequest");
         if (corsRequest()) return true;
         String requestUri = facade.getRequest().getURI();
         if (requestUri.endsWith(KEYCLOAK_QUERY_BEARER_TOKEN)) {
