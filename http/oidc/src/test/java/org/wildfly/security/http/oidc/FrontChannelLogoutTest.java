@@ -79,7 +79,7 @@ public class FrontChannelLogoutTest extends AbstractLogoutTest {
     @Test
     public void testRPInitiatedLogoutWithPostLogoutUri() throws Exception {
         OidcClientConfiguration oidcClientConfiguration = getClientConfig();
-        oidcClientConfiguration.setPostLogoutPath("/post-logout");
+        oidcClientConfiguration.setPostLogoutPath("http://localhost/8080/post-logout");
         configureDispatcher(oidcClientConfiguration, new Dispatcher() {
             @Override
             public MockResponse dispatch(RecordedRequest request) {
@@ -100,7 +100,7 @@ public class FrontChannelLogoutTest extends AbstractLogoutTest {
         assertTrue(page.getWebResponse().getContentAsString().contains("Welcome, authenticated user"));
 
         assertUserAuthenticated();
-        HtmlPage continueLogout = webClient.getPage(getClientUrl() + getClientConfig().getLogoutPath());
+        HtmlPage continueLogout = webClient.getPage(getClientConfig().getLogoutPath());
         page = continueLogout.getElementById("continue").click();
         assertUserNotAuthenticated();
         assertTrue(page.getWebResponse().getContentAsString().contains("you are logged out from app"));
