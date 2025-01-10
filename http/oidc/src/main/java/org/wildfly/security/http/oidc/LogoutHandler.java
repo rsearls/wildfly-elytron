@@ -38,13 +38,13 @@ import org.wildfly.security.http.oidc.OidcHttpFacade.Request;
  */
 final class LogoutHandler {
 
-    public static final String POST_LOGOUT_REDIRECT_URI_PARAM = "post_logout_redirect_uri";
-    public static final String ID_TOKEN_HINT_PARAM = "id_token_hint";
+    private static final String POST_LOGOUT_REDIRECT_URI_PARAM = "post_logout_redirect_uri";
+    private static final String ID_TOKEN_HINT_PARAM = "id_token_hint";
     private static final String LOGOUT_TOKEN_PARAM = "logout_token";
     private static final String LOGOUT_TOKEN_TYPE = "Logout";
     private static final String CLIENT_ID_SID_SEPARATOR = "-";
-    public static final String SID = "sid";
-    public static final String ISS = "iss";
+    private static final String SID = "sid";
+    private static final String ISS = "iss";
 
     /**
      * A bounded map to store sessions marked for invalidation after receiving logout requests through the back-channel
