@@ -27,7 +27,7 @@ import static org.wildfly.security.http.oidc.Oidc.SSLRequired;
 import static org.wildfly.security.http.oidc.Oidc.TokenStore;
 import static org.wildfly.security.http.oidc.Oidc.LOGOUT_PATH;
 import static org.wildfly.security.http.oidc.Oidc.LOGOUT_CALLBACK_PATH;
-import static org.wildfly.security.http.oidc.Oidc.POST_LOGOUT_PATH;
+import static org.wildfly.security.http.oidc.Oidc.POST_LOGOUT_URI;
 import static org.wildfly.security.http.oidc.Oidc.LOGOUT_SESSION_REQUIRED;
 
 import java.io.IOException;
@@ -226,13 +226,13 @@ public class OidcClientConfigurationBuilder {
             }
         }
 
-        String tmpPostLogoutPath = System.getProperty(POST_LOGOUT_PATH);
-        log.debug("sysProp POST_LOGOUT_PATH: " + (tmpPostLogoutPath == null ? "NULL" : tmpPostLogoutPath));
-        if (tmpPostLogoutPath != null) {
-            if (isValidPath(tmpPostLogoutPath) || tmpPostLogoutPath.startsWith("http")) {
-                oidcClientConfiguration.setPostLogoutPath(tmpPostLogoutPath);
+        String tmpPostLogoutUri = System.getProperty(POST_LOGOUT_URI);
+        log.debug("sysProp POST_LOGOUT_URI: " + (tmpPostLogoutUri == null ? "NULL" : tmpPostLogoutUri));
+        if (tmpPostLogoutUri != null) {
+            if (isValidPath(tmpPostLogoutUri) || tmpPostLogoutUri.startsWith("http")) {
+                oidcClientConfiguration.setPostLogoutPath(tmpPostLogoutUri);
             } else {
-                throw log.invalidLogoutPath(tmpPostLogoutPath, POST_LOGOUT_PATH);
+                throw log.invalidLogoutPath(tmpPostLogoutUri, POST_LOGOUT_URI);
             }
         }
 

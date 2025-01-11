@@ -44,7 +44,7 @@ public class LogoutConfigurationOptionsTest {
     public void after() {
         System.clearProperty(Oidc.LOGOUT_PATH);
         System.clearProperty(Oidc.LOGOUT_CALLBACK_PATH);
-        System.clearProperty(Oidc.POST_LOGOUT_PATH);
+        System.clearProperty(Oidc.POST_LOGOUT_URI);
     }
 
     @Test
@@ -100,19 +100,19 @@ public class LogoutConfigurationOptionsTest {
     public void testPostLogoutPath() {
 
         try {
-            System.setProperty(Oidc.POST_LOGOUT_PATH, " ");
+            System.setProperty(Oidc.POST_LOGOUT_URI, " ");
             OidcClientConfigurationBuilder.build(oidcJsonConfiguration);
-            fail("Empty " +Oidc.POST_LOGOUT_PATH+ " is invalid");
+            fail("Empty " +Oidc.POST_LOGOUT_URI+ " is invalid");
         } catch (Exception e) {
-            assertTrue(e.getMessage().endsWith(Oidc.POST_LOGOUT_PATH));
+            assertTrue(e.getMessage().endsWith(Oidc.POST_LOGOUT_URI));
         }
 
         try {
-            System.setProperty(Oidc.POST_LOGOUT_PATH, "/");
+            System.setProperty(Oidc.POST_LOGOUT_URI, "/");
             OidcClientConfigurationBuilder.build(oidcJsonConfiguration);
-            fail("/ in " + Oidc.POST_LOGOUT_PATH + " is invalid");
+            fail("/ in " + Oidc.POST_LOGOUT_URI + " is invalid");
         } catch (Exception e) {
-            assertTrue(e.getMessage().endsWith(Oidc.POST_LOGOUT_PATH));
+            assertTrue(e.getMessage().endsWith(Oidc.POST_LOGOUT_URI));
         }
     }
 }
