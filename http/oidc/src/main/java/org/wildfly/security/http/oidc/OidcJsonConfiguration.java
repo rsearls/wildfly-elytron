@@ -43,7 +43,11 @@ import static org.wildfly.security.http.oidc.Oidc.ENABLE_CORS;
 import static org.wildfly.security.http.oidc.Oidc.ENABLE_PKCE;
 import static org.wildfly.security.http.oidc.Oidc.EXPOSE_TOKEN;
 import static org.wildfly.security.http.oidc.Oidc.IGNORE_OAUTH_QUERY_PARAMETER;
+import static org.wildfly.security.http.oidc.Oidc.LOGOUT_PATH;
+import static org.wildfly.security.http.oidc.Oidc.LOGOUT_CALLBACK_PATH;
+import static org.wildfly.security.http.oidc.Oidc.LOGOUT_SESSION_REQUIRED;
 import static org.wildfly.security.http.oidc.Oidc.MIN_TIME_BETWEEN_JWKS_REQUESTS;
+import static org.wildfly.security.http.oidc.Oidc.POST_LOGOUT_URI;
 import static org.wildfly.security.http.oidc.Oidc.PRINCIPAL_ATTRIBUTE;
 import static org.wildfly.security.http.oidc.Oidc.PROVIDER_URL;
 import static org.wildfly.security.http.oidc.Oidc.PROXY_URL;
@@ -99,8 +103,9 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         ALWAYS_REFRESH_TOKEN,
         REGISTER_NODE_AT_STARTUP, REGISTER_NODE_PERIOD, TOKEN_STORE, ADAPTER_STATE_COOKIE_PATH, PRINCIPAL_ATTRIBUTE,
         PROXY_URL, TURN_OFF_CHANGE_SESSION_ID_ON_LOGIN, TOKEN_MINIMUM_TIME_TO_LIVE,
-        MIN_TIME_BETWEEN_JWKS_REQUESTS, PUBLIC_KEY_CACHE_TTL,
-        IGNORE_OAUTH_QUERY_PARAMETER, VERIFY_TOKEN_AUDIENCE, TOKEN_SIGNATURE_ALGORITHM, SCOPE,
+        MIN_TIME_BETWEEN_JWKS_REQUESTS, POST_LOGOUT_URI, PUBLIC_KEY_CACHE_TTL,
+        IGNORE_OAUTH_QUERY_PARAMETER, LOGOUT_PATH, LOGOUT_CALLBACK_PATH, LOGOUT_SESSION_REQUIRED,
+        VERIFY_TOKEN_AUDIENCE, TOKEN_SIGNATURE_ALGORITHM, SCOPE,
         AUTHENTICATION_REQUEST_FORMAT, REQUEST_OBJECT_SIGNING_ALGORITHM, REQUEST_OBJECT_ENCRYPTION_ALG_VALUE,
         REQUEST_OBJECT_ENCRYPTION_ENC_VALUE, REQUEST_OBJECT_SIGNING_KEYSTORE_FILE,
         REQUEST_OBJECT_SIGNING_KEYSTORE_PASSWORD,REQUEST_OBJECT_SIGNING_KEY_PASSWORD, REQUEST_OBJECT_SIGNING_KEY_ALIAS,
@@ -152,6 +157,8 @@ public class OidcJsonConfiguration {
     protected int tokenMinimumTimeToLive = 0;
     @JsonProperty(MIN_TIME_BETWEEN_JWKS_REQUESTS)
     protected int minTimeBetweenJwksRequests = 10;
+    @JsonProperty(POST_LOGOUT_URI)
+    protected String postLogoutUri;
     @JsonProperty(PUBLIC_KEY_CACHE_TTL)
     protected int publicKeyCacheTtl = 86400; // 1 day
     // https://tools.ietf.org/html/rfc7636
@@ -159,6 +166,12 @@ public class OidcJsonConfiguration {
     protected boolean pkce = false;
     @JsonProperty(IGNORE_OAUTH_QUERY_PARAMETER)
     protected boolean ignoreOAuthQueryParameter = false;
+    @JsonProperty(LOGOUT_PATH)
+    protected String logoutPath;
+    @JsonProperty(LOGOUT_CALLBACK_PATH)
+    protected String logoutCallbackPath;
+    @JsonProperty(LOGOUT_SESSION_REQUIRED)
+    protected String logoutSessionRequired;
     @JsonProperty(VERIFY_TOKEN_AUDIENCE)
     protected boolean verifyTokenAudience = false;
     @JsonProperty(CONFIDENTIAL_PORT)
@@ -407,6 +420,14 @@ public class OidcJsonConfiguration {
         return minTimeBetweenJwksRequests;
     }
 
+    public String getPostLogoutUri() {
+        return postLogoutUri;
+    }
+
+    public void setPostLogoutUri(String postLogoutUri) {
+        this.postLogoutUri = postLogoutUri;
+    }
+
     public void setMinTimeBetweenJwksRequests(int minTimeBetweenJwksRequests) {
         this.minTimeBetweenJwksRequests = minTimeBetweenJwksRequests;
     }
@@ -434,6 +455,30 @@ public class OidcJsonConfiguration {
 
     public void setIgnoreOAuthQueryParameter(boolean ignoreOAuthQueryParameter) {
         this.ignoreOAuthQueryParameter = ignoreOAuthQueryParameter;
+    }
+
+    public String getLogoutPath() {
+        return logoutPath;
+    }
+
+    public void setLogoutPath(String logoutPath) {
+        this.logoutPath = logoutPath;
+    }
+
+    public String getLogoutCallbackPath() {
+        return logoutCallbackPath;
+    }
+
+    public void setLogoutCallbackPath(String logoutCallbackPath) {
+        this.logoutCallbackPath = logoutCallbackPath;
+    }
+
+    public String getLogoutSessionRequired() {
+        return logoutSessionRequired;
+    }
+
+    public void setLogoutSessionRequired(String logoutSessionRequired) {
+        this.logoutSessionRequired = logoutSessionRequired;
     }
 
     public boolean isVerifyTokenAudience() {

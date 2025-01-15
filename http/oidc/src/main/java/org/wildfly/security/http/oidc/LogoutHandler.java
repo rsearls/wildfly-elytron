@@ -95,6 +95,7 @@ final class LogoutHandler {
     boolean isSessionMarkedForInvalidation(OidcHttpFacade facade) {
         HttpScope session = facade.getScope(Scope.SESSION);
         if (session == null || ! session.exists()) return false;
+
         RefreshableOidcSecurityContext securityContext = (RefreshableOidcSecurityContext) session.getAttachment(OidcSecurityContext.class.getName());
         if (securityContext == null) {
             return false;
@@ -104,6 +105,7 @@ final class LogoutHandler {
         if (idToken == null) {
             return false;
         }
+
         return sessionsMarkedForInvalidation.remove(getSessionKey(facade, idToken.getSid())) != null;
     }
 
@@ -116,10 +118,10 @@ final class LogoutHandler {
         try {
             URIBuilder redirectUriBuilder = new URIBuilder(clientConfiguration.getEndSessionEndpointUrl())
                     .addParameter(ID_TOKEN_HINT_PARAM, securityContext.getIDTokenString());
-            String postLogoutPath = clientConfiguration.getPostLogoutPath();
-            if (postLogoutPath != null) {
-                log.trace("post_logout_redirect_uri: " + postLogoutPath);
-                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM, postLogoutPath);
+            String postLogoutUri = clientConfiguration.getPostLogoutUri();
+            if (postLogoutUri != null) {
+                log.trace("post_logout_redirect_uri: " + postLogoutUri);
+                redirectUriBuilder.addParameter(POST_LOGOUT_REDIRECT_URI_PARAM, postLogoutUri);
             }
 
             logoutUri = redirectUriBuilder.build().toString();

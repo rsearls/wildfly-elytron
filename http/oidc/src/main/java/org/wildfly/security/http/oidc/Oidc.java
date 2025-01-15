@@ -175,7 +175,7 @@ public class Oidc {
     public static final String PROVIDER_URL = "provider-url";
     public static final String LOGOUT_PATH = "logout-path";
     public static final String LOGOUT_CALLBACK_PATH = "logout-callback-path";
-    public static final String POST_LOGOUT_URI = "post-logout-path";
+    public static final String POST_LOGOUT_URI = "post-logout-uri";
     public static final String LOGOUT_SESSION_REQUIRED = "logout-session-required";
 
     /**

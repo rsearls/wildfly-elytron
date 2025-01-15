@@ -199,7 +199,10 @@ public class OidcClientConfigurationBuilder {
 
         oidcClientConfiguration.setTokenSignatureAlgorithm(oidcJsonConfiguration.getTokenSignatureAlgorithm());
 
-        String tmpLogoutPath = System.getProperty(LOGOUT_PATH);
+        String tmpLogoutPath = oidcJsonConfiguration.getLogoutPath();
+        if (tmpLogoutPath == null) {
+            tmpLogoutPath = System.getProperty(LOGOUT_PATH);
+        }
         log.debug("sysProp LOGOUT_PATH: " + (tmpLogoutPath == null ? "NULL" : tmpLogoutPath));
         if (tmpLogoutPath != null) {
             if (isValidPath(tmpLogoutPath)) {
@@ -209,8 +212,10 @@ public class OidcClientConfigurationBuilder {
             }
         }
 
-
-        String tmpLogoutCallbackPath = System.getProperty(LOGOUT_CALLBACK_PATH);
+        String tmpLogoutCallbackPath = oidcJsonConfiguration.getLogoutCallbackPath();
+        if (tmpLogoutCallbackPath == null) {
+            tmpLogoutCallbackPath = System.getProperty(LOGOUT_CALLBACK_PATH);
+        }
         log.debug("sysProp LOGOUT_CALLBACK_PATH: " + (tmpLogoutCallbackPath == null ? "NULL" : tmpLogoutCallbackPath));
         if (tmpLogoutCallbackPath != null) {
             if (isValidPath(tmpLogoutCallbackPath)
@@ -226,21 +231,29 @@ public class OidcClientConfigurationBuilder {
             }
         }
 
-        String tmpPostLogoutUri = System.getProperty(POST_LOGOUT_URI);
+        String tmpPostLogoutUri = oidcJsonConfiguration.getPostLogoutUri();
+        if (tmpPostLogoutUri == null) {
+            tmpPostLogoutUri = System.getProperty(POST_LOGOUT_URI);
+        }
         log.debug("sysProp POST_LOGOUT_URI: " + (tmpPostLogoutUri == null ? "NULL" : tmpPostLogoutUri));
         if (tmpPostLogoutUri != null) {
             if (isValidPath(tmpPostLogoutUri) || tmpPostLogoutUri.startsWith("http")) {
-                oidcClientConfiguration.setPostLogoutPath(tmpPostLogoutUri);
+                oidcClientConfiguration.setPostLogoutUri(tmpPostLogoutUri);
             } else {
                 throw log.invalidLogoutPath(tmpPostLogoutUri, POST_LOGOUT_URI);
             }
         }
 
-        String tmpLogoutSessionRequired = System.getProperty(LOGOUT_SESSION_REQUIRED);
-        if (tmpLogoutSessionRequired != null) {
-            oidcClientConfiguration.setLogoutSessionRequired(
-                    Boolean.valueOf(tmpLogoutSessionRequired));
+        String tmpLogoutSessionRequired = oidcJsonConfiguration.getLogoutSessionRequired();
+        if (tmpLogoutSessionRequired == null) {
+            String sysPropLogoutSessionRequired = System.getProperty(LOGOUT_SESSION_REQUIRED);
+            if (sysPropLogoutSessionRequired == null) {
+                tmpLogoutSessionRequired = "true";
+            } else {
+                tmpLogoutSessionRequired = sysPropLogoutSessionRequired;
+            }
         }
+        oidcClientConfiguration.setLogoutSessionRequired(tmpLogoutSessionRequired);
 
         return oidcClientConfiguration;
     }

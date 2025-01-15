@@ -79,7 +79,7 @@ public class FrontChannelLogoutTest extends AbstractLogoutTest {
     @Test
     public void testRPInitiatedLogoutWithPostLogoutUri() throws Exception {
         OidcClientConfiguration oidcClientConfiguration = getClientConfig();
-        oidcClientConfiguration.setPostLogoutPath(getClientUrl()+"/post-logout");
+        oidcClientConfiguration.setPostLogoutUri(getClientUrl()+"/post-logout");
         configureDispatcher(oidcClientConfiguration, new Dispatcher() {
             @Override
             public MockResponse dispatch(RecordedRequest request) {
