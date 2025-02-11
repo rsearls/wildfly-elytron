@@ -367,6 +367,15 @@ public class OidcTest extends OidcBaseTest {
         testRequestObjectInvalidConfiguration(getOidcConfigurationInputStreamWithoutEncValue(REQUEST.getValue(), RSA_OAEP), RequestObjectErrorType.MISSING_ENC_VALUE);
     }
 
+    @Test
+    // Generate an invalid sessionId so that the nonce check fails
+    public void testSessionIdNonceMismatch() throws Exception {
+        performAuthentication(
+                getOidcConfigurationInputStreamWithRequestParameter(REQUEST.getValue(), NONE, "", ""),
+                KeycloakConfiguration.ALICE, KeycloakConfiguration.ALICE_PASSWORD,true,
+                HttpStatus.SC_FORBIDDEN,null, CLIENT_PAGE_TEXT, true);
+    }
+
     /*****************************************************************************************************************************************
      * Tests for multi-tenancy.
      *

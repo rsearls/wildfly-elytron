@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.wildfly.security.http.oidc.Oidc.OIDC_NAME;
+import static org.wildfly.security.http.oidc.Oidc.SESSION_ID;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -211,6 +212,32 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
         };
     }
 
+    protected static Dispatcher createAppResponse(HttpServerAuthenticationMechanism mechanism,
+                                                  int expectedStatusCode, String expectedLocation,
+                                                  String clientPageText, List<HttpServerCookie> cookies) {
+        return new Dispatcher() {
+            @Override
+            public MockResponse dispatch(RecordedRequest recordedRequest) throws InterruptedException {
+                String path = recordedRequest.getPath();
+                if (path.contains("/" + CLIENT_APP) && path.contains("&code=")) {
+                    try {
+                        TestingHttpServerRequest request = new TestingHttpServerRequest(new String[0],
+                                new URI(recordedRequest.getRequestUrl().toString()), cookies);
+                        mechanism.evaluateRequest(request);
+                        TestingHttpServerResponse response = request.getResponse();
+                        assertEquals(expectedStatusCode, response.getStatusCode());
+                        assertEquals(expectedLocation, response.getLocation());
+                        return new MockResponse().setBody(clientPageText);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return new MockResponse()
+                        .setBody("");
+            }
+        };
+    }
+
     protected static Dispatcher createAppResponse(HttpServerAuthenticationMechanism mechanism, int expectedStatusCode, String expectedLocation, String clientPageText,
                                                   Map<String, Object> sessionScopeAttachments) {
         return new Dispatcher() {
@@ -351,24 +378,31 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
     protected void performAuthentication(InputStream oidcConfig, String username, String password, boolean loginToKeycloak,
                                        int expectedDispatcherStatusCode, String expectedLocation, String clientPageText) throws Exception {
         performAuthentication(oidcConfig, username, password, loginToKeycloak, expectedDispatcherStatusCode, getClientUrl(), expectedLocation,
-                clientPageText, null, false);
+                clientPageText, null, false, false );
+    }
+
+    protected void performAuthentication(InputStream oidcConfig, String username, String password, boolean loginToKeycloak,
+                                         int expectedDispatcherStatusCode, String expectedLocation, String clientPageText,
+                                         boolean changeSessionId) throws Exception {
+        performAuthentication(oidcConfig, username, password, loginToKeycloak, expectedDispatcherStatusCode, getClientUrl(), expectedLocation,
+                clientPageText, null, false, changeSessionId);
     }
 
     protected void performAuthentication(InputStream oidcConfig, String username, String password, boolean loginToKeycloak,
                                          int expectedDispatcherStatusCode, String clientUrl, String expectedLocation, String clientPageText) throws Exception {
         performAuthentication(oidcConfig, username, password, loginToKeycloak, expectedDispatcherStatusCode, clientUrl, expectedLocation,
-                clientPageText, null, false);
+                clientPageText, null, false, false);
     }
 
     protected void performAuthentication(InputStream oidcConfig, String username, String password, boolean loginToKeycloak, int expectedDispatcherStatusCode,
                                          String expectedLocation, String clientPageText, String expectedScope, boolean checkInvalidScopeError) throws Exception {
         performAuthentication(oidcConfig, username, password, loginToKeycloak, expectedDispatcherStatusCode, getClientUrl(), expectedLocation, clientPageText,
-                expectedScope, checkInvalidScopeError);
+                expectedScope, checkInvalidScopeError, false);
     }
 
     private void performAuthentication(InputStream oidcConfig, String username, String password, boolean loginToKeycloak,
                                        int expectedDispatcherStatusCode, String clientUrl, String expectedLocation, String clientPageText,
-                                       String expectedScope, boolean checkInvalidScopeError) throws Exception {
+                                       String expectedScope, boolean checkInvalidScopeError, boolean changeSessionId) throws Exception {
         try {
             Map<String, Object> props = new HashMap<>();
             OidcClientConfiguration oidcClientConfiguration = OidcClientConfigurationBuilder.build(oidcConfig);
@@ -394,7 +428,31 @@ public class OidcBaseTest extends AbstractBaseHttpTest {
             }
 
             if (loginToKeycloak) {
-                client.setDispatcher(createAppResponse(mechanism, expectedDispatcherStatusCode, expectedLocation, clientPageText));
+                // change the sessionId value so that the compare to nonce will fail.
+                if (changeSessionId) {
+                    HttpServerCookie stateCookie = null;
+                    String sessionIdStr = null;
+                    List<HttpServerCookie> tmpCookies = response.getCookies();
+                    for (int i = 0; i < tmpCookies.size(); i++) {
+                        if (tmpCookies.get(i).getName().equals(oidcClientConfiguration.getStateCookieName())) {
+                            stateCookie = tmpCookies.get(i);
+                        } else if (tmpCookies.get(i).getName().equals(SESSION_ID)) {
+                            sessionIdStr = "; " + tmpCookies.get(i).getName() + "=99" + tmpCookies.get(i).getName();
+                        }
+                    }
+
+                    if (stateCookie != null  && sessionIdStr != null) {
+                        tmpCookies.remove(stateCookie);
+                        tmpCookies.add(HttpServerCookie.getInstance(stateCookie.getName(),
+                                stateCookie.getValue() + sessionIdStr, stateCookie.getDomain(),
+                                stateCookie.getMaxAge(), stateCookie.getPath(), stateCookie.isSecure(),
+                                stateCookie.getVersion(), stateCookie.isHttpOnly()));
+                    }
+                    client.setDispatcher(createAppResponse(mechanism, expectedDispatcherStatusCode,
+                            expectedLocation, clientPageText, tmpCookies));
+                } else {
+                    client.setDispatcher(createAppResponse(mechanism, expectedDispatcherStatusCode, expectedLocation, clientPageText));
+                }
 
                 if (checkInvalidScopeError) {
                     WebClient webClient = getWebClient();

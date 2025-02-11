@@ -111,6 +111,7 @@ public class Oidc {
     public static final String REDIRECT_URI = "redirect_uri";
     public static final String REFRESH_TOKEN = "refresh_token";
     public static final String RESPONSE_TYPE = "response_type";
+    public static final String SESSION_ID = "session_id";
     public static final String SESSION_STATE = "session_state";
     public static final String SOAP_ACTION = "SOAPAction";
     public static final String SSL_REQUIRED = "ssl-required";

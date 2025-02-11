@@ -23,6 +23,7 @@ import static org.jose4j.jws.AlgorithmIdentifiers.HMAC_SHA384;
 import static org.jose4j.jws.AlgorithmIdentifiers.HMAC_SHA512;
 import static org.jose4j.jws.AlgorithmIdentifiers.NONE;
 import static org.wildfly.security.http.oidc.ElytronMessages.log;
+import static org.wildfly.security.http.oidc.IDToken.NONCE;
 import static org.wildfly.security.http.oidc.Oidc.ALLOW_QUERY_PARAMS_PROPERTY_NAME;
 import static org.wildfly.security.http.oidc.Oidc.CLIENT_ID;
 import static org.wildfly.security.http.oidc.Oidc.CODE;
@@ -39,6 +40,7 @@ import static org.wildfly.security.http.oidc.Oidc.RESPONSE_TYPE;
 import static org.wildfly.security.http.oidc.Oidc.REQUEST;
 import static org.wildfly.security.http.oidc.Oidc.REQUEST_URI;
 import static org.wildfly.security.http.oidc.Oidc.SCOPE;
+import static org.wildfly.security.http.oidc.Oidc.SESSION_ID;
 import static org.wildfly.security.http.oidc.Oidc.SESSION_STATE;
 import static org.wildfly.security.http.oidc.Oidc.STATE;
 import static org.wildfly.security.http.oidc.Oidc.UI_LOCALES;
@@ -59,6 +61,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -76,6 +79,7 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.keys.HmacKey;
 import org.jose4j.lang.JoseException;
+import org.wildfly.common.iteration.ByteIterator;
 import org.wildfly.security.http.HttpConstants;
 
 /**
@@ -95,6 +99,9 @@ public class OidcRequestAuthenticator {
     protected AuthChallenge challenge;
     protected String refreshToken;
     protected String strippedOauthParametersRequestUri;
+
+    private int NONCE_SIZE = 36;
+    private final String sessionId = generateSessionId();
 
     static final boolean ALLOW_QUERY_PARAMS_PROPERTY;
 
@@ -222,7 +229,8 @@ public class OidcRequestAuthenticator {
             String redirectUri = rewrittenRedirectUri(url);
             URIBuilder redirectUriBuilder = new URIBuilder(deployment.getAuthUrl());
             redirectUriBuilder.addParameter(RESPONSE_TYPE, CODE)
-                    .addParameter(CLIENT_ID, deployment.getResourceName());
+                    .addParameter(CLIENT_ID, deployment.getResourceName())
+                    .addParameter(NONCE, String.valueOf(sessionId.hashCode()));
 
             switch (deployment.getAuthenticationRequestFormat()) {
                 case REQUEST:
@@ -314,6 +322,8 @@ public class OidcRequestAuthenticator {
                 exchange.getResponse().setStatus(HttpStatus.SC_MOVED_TEMPORARILY);
                 exchange.getResponse().setCookie(deployment.getStateCookieName(), state, "/", null, -1, deployment.getSSLRequired().isRequired(facade.getRequest().getRemoteAddr()), true);
                 exchange.getResponse().setHeader(HttpConstants.LOCATION, redirect);
+                exchange.getResponse().setCookie(SESSION_ID, sessionId, "/", null, -1, deployment.getSSLRequired().isRequired(facade.getRequest().getRemoteAddr()), true);
+
                 return true;
             }
         };
@@ -336,9 +346,16 @@ public class OidcRequestAuthenticator {
             log.warn("state parameter was null");
             return challenge(HttpStatus.SC_BAD_REQUEST, AuthenticationError.Reason.INVALID_STATE_COOKIE, null);
         }
-        if (!state.equals(stateCookieValue)) {
+
+        String sCookieValue = stateCookieValue;
+        if (stateCookieValue != null) {
+            String[] cookieArr = stateCookieValue.split(";");
+            sCookieValue = cookieArr[0];
+        }
+
+        if (!state.equals(sCookieValue)) {
             log.warn("state parameter invalid");
-            log.warn("cookie: " + stateCookieValue);
+            log.warn("cookie: " + sCookieValue);
             log.warn("queryParam: " + state);
             return challenge(HttpStatus.SC_BAD_REQUEST, AuthenticationError.Reason.INVALID_STATE_COOKIE, null);
         }
@@ -444,6 +461,22 @@ public class OidcRequestAuthenticator {
             TokenValidator.VerifiedTokens verifiedTokens = tokenValidator.parseAndVerifyToken(idTokenString, tokenString);
             idToken = verifiedTokens.getIdToken();
             token = verifiedTokens.getAccessToken();
+
+            String stateCookieValue = getCookieValue(deployment.getStateCookieName());
+            String[] cookieArr = stateCookieValue.split(";");
+            String sessionIdValue = "";
+            for(int i=0; i < cookieArr.length; i++) {
+                String cookie = cookieArr[i].trim();
+                if (cookie.startsWith(SESSION_ID+"=")) {
+                    sessionIdValue = cookie.substring((SESSION_ID+"=").length());
+                    break;
+                }
+            }
+            String nonceValue = idToken.getNonce();
+            if (nonceValue == null || !nonceValue.equals(String.valueOf(sessionIdValue.hashCode()))) {
+                throw new OidcException("Invalid " + SESSION_ID);
+            }
+
             log.debug("Token Verification succeeded!");
         } catch (OidcException e) {
             log.failedVerificationOfToken(e.getMessage());
@@ -456,6 +489,7 @@ public class OidcRequestAuthenticator {
             log.error("Stale token");
             return challenge(HttpStatus.SC_FORBIDDEN, AuthenticationError.Reason.STALE_TOKEN, null);
         }
+
         log.debug("successfully authenticated");
         return null;
     }
@@ -545,10 +579,12 @@ public class OidcRequestAuthenticator {
         for ( NameValuePair parameter: forwardedQueryParams) {
             jwtClaims.setClaim(parameter.getName(), parameter.getValue());
         }
+
         jwtClaims.setClaim(STATE, state);
         jwtClaims.setClaim(REDIRECT_URI, redirectUri);
         jwtClaims.setClaim(RESPONSE_TYPE, CODE);
         jwtClaims.setClaim(CLIENT_ID, deployment.getResourceName());
+        jwtClaims.setClaim(NONCE, String.valueOf(sessionId.hashCode()));
 
         // sign JWT first before encrypting
         JsonWebSignature signedRequest = signRequest(jwtClaims, deployment);
@@ -621,5 +657,13 @@ public class OidcRequestAuthenticator {
             jsonEncryption.setKey(encPublicKey);
             return jsonEncryption;
         }
+    }
+
+    private String generateSessionId() {
+        SecureRandom random = new SecureRandom();
+        byte[] nonceData = new byte[NONCE_SIZE];
+        random.nextBytes(nonceData);
+        return String.valueOf(ByteIterator.ofBytes(nonceData)
+                .base64Encode().drainToString().getBytes(StandardCharsets.US_ASCII));
     }
 }
