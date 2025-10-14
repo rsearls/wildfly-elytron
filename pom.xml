@@ -1366,13 +1366,13 @@
                             </sourceFileExcludes>
                         </configuration>
                         <executions>
-                            <execution><!-- mvn javadoc:aggregate@api-javadoc -->
+                                        <!-- mvn -Paggregate-javadoc javadoc:aggregate-jar@api-javadoc -->
+                            <execution><!-- mvn -Paggregate-javadoc javadoc:aggregate@api-javadoc -->
                                 <id>api-javadoc</id>
                                 <goals>
                                     <goal>aggregate</goal>
                                 </goals>
                                 <configuration>
-                                    <destDir>api-javadoc</destDir>
                                     <sourceFileIncludes>
                                         <include>org/wildfly/security/*.java</include>
                                         <include>org/wildfly/security/asn1/*.java</include>
@@ -1416,13 +1416,13 @@
                                     </sourceFileIncludes>
                                 </configuration>
                             </execution>
-                            <execution><!-- mvn javadoc:aggregate@full-javadoc -->
+                                        <!-- mvn -Paggregate-javadoc  javadoc:aggregate-jar@full-javadoc -->
+                            <execution><!-- mvn -Paggregate-javadoc  javadoc:aggregate@full-javadoc -->
                                 <id>full-javadoc</id>
                                 <goals>
                                     <goal>aggregate</goal>
                                 </goals>
                                 <configuration>
-                                    <destDir>full-javadoc</destDir>
                                     <show>private</show>
                                     <sourceFileIncludes>
                                         <include>**\/\*.java</include>
