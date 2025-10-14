@@ -39,6 +39,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.7.0-jboss-1</version>
+                <!-- To retain the ability to have jdk-misc.jar on the compiler classpath
+                    this plugin version and the "release" setting of 8 must be retained.
+                    Classes in jdk-misc.jar have been removed or deprecated in jdk-11+.
+                -->
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -148,7 +152,6 @@
             <artifactId>jmockit</artifactId>
             <scope>test</scope>
         </dependency>
-               
     </dependencies>
 
 </project>
