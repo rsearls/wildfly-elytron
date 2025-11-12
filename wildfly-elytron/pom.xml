@@ -105,7 +105,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.7.0-jboss-1</version>
+                <version>${version.compiler.plugin}</version>
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -548,7 +548,7 @@
                     <plugin>
                         <groupId>com.github.siom79.japicmp</groupId>
                         <artifactId>japicmp-maven-plugin</artifactId>
-                        <version>0.20.0</version>
+                        <version>0.23.1</version>
                         <inherited>false</inherited>
                         <configuration>
                             <oldVersion>

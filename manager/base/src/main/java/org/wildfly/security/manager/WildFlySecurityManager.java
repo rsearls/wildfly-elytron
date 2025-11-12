@@ -22,6 +22,8 @@ import java.io.FileDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.net.InetAddress;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.security.AccessControlContext;
 import java.security.CodeSource;
 import java.security.Permission;
@@ -53,7 +55,6 @@ import org.wildfly.security.manager.action.ReadPropertyAction;
 import org.wildfly.security.manager.action.SetContextClassLoaderAction;
 import org.wildfly.security.manager.action.WritePropertyAction;
 import org.wildfly.security.permission.PermissionVerifier;
-import sun.misc.Unsafe;
 
 import static java.lang.System.clearProperty;
 import static java.lang.System.getProperties;
@@ -99,29 +100,25 @@ public final class WildFlySecurityManager extends SecurityManager implements Per
         }
     };
 
-    private static final Unsafe unsafe;
-    private static final long pdStackOffset;
     private static final WildFlySecurityManager INSTANCE;
     private static final boolean hasGetCallerClass;
     private static final boolean usingStackWalker;
 
+    private static final Field pdField;
     static {
-        final Field pdField;
+        final VarHandle fieldVarHandle;
+
         try {
-            // does not need to be accessible
-            pdField = AccessControlContext.class.getDeclaredField("context");
-        } catch (NoSuchFieldException e) {
+            fieldVarHandle = MethodHandles.lookup().findVarHandle(AccessControlContext.class, "context", Field.class);
+            pdField = (Field)fieldVarHandle.get(AccessControlContext.class);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new NoSuchFieldError(e.getMessage());
         }
+
         if (pdField.getType() != ProtectionDomain[].class) {
             throw new Error();
         }
-        try {
-            unsafe = (Unsafe) doPrivileged(new GetAccessibleDeclaredFieldAction(Unsafe.class, "theUnsafe")).get(null);
-        } catch (IllegalAccessException e) {
-            throw new IllegalAccessError(e.getMessage());
-        }
-        pdStackOffset = unsafe.objectFieldOffset(pdField);
+
         // Cannot be lambda due to JDK race conditions
         //noinspection Convert2Lambda,Anonymous2MethodRef
         INSTANCE = doPrivileged(new PrivilegedAction<WildFlySecurityManager>() {
@@ -316,7 +313,14 @@ public final class WildFlySecurityManager extends SecurityManager implements Per
     }
 
     private static ProtectionDomain[] getProtectionDomainStack(final AccessControlContext context) {
-        return (ProtectionDomain[]) unsafe.getObject(context, pdStackOffset);
+        Object value = null;
+        try {
+            VarHandle handle = MethodHandles.lookup().unreflectVarHandle(pdField);
+            value = handle.get(context);
+        } catch (IllegalAccessException e) {
+            // todo rls address this
+        }
+        return (ProtectionDomain[]) value;
     }
 
     private static boolean doCheck() {

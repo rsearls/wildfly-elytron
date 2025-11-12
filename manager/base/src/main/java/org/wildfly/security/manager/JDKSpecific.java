@@ -17,10 +17,10 @@
  */
 package org.wildfly.security.manager;
 
-import sun.reflect.Reflection;
 
 /**
- * JDK-specific classes which are replaced for different JDK major versions. This class is for JDK 8.
+ * JDK-specific classes which are replaced for different JDK major versions. This class has been
+ * updated from using JDK 8's Reflection class to using JDK 11+ current Thread's stackTrace array.
  * @author <a href="mailto:jucook@redhat.com">Justin Cook</a>
  */
 final class JDKSpecific {
@@ -31,24 +31,47 @@ final class JDKSpecific {
     static {
 
         boolean active = false;
-        int offset = 0;
+        // offset inside the StackTrace
+        // [0] the stackTrace itself (e.g getStackTrace())
+        // [1] The class containing this global static block
+        // [2] The method being called from inside this static block (e.g. getCallerClass())
+        // [3] The class we are interested in
+        int offset = 3;
+
         try {
-            // JDK-8014925 - An additional Reflection call may be on the call stack so check the offset needed.
-            active = Reflection.getCallerClass(1) == WildFlySecurityManager.class || Reflection.getCallerClass(2) == WildFlySecurityManager.class;
-            offset = Reflection.getCallerClass(1) == Reflection.class ? 2 : 1;
+            Class<?> clazz1 = getCallerClass(0, offset);
+            active = clazz1 == WildFlySecurityManager.class || getCallerClass(1, offset) == WildFlySecurityManager.class;
+            offset = offset + (clazz1 == WildFlySecurityManager.class ? 0 : 1);
         } catch (Throwable ignored) {}
 
         JDKSpecific.active = active;
-        // JDKSpecific.getCallerClass will also add 1 to the stack.
-        JDKSpecific.offset = offset + 1;
+        JDKSpecific.offset = offset;
     }
 
     public static Class<?> getCallerClass(int n) {
         if (active) {
-            return Reflection.getCallerClass(n + offset);
+            try {
+                return getCallerClass(n, offset);
+            } catch(ClassNotFoundException e ) {
+                throw new IllegalStateException("Class not found in StackTraceElement[int].");
+            }
         } else {
-            throw new IllegalStateException("sun.reflect.Reflect.getCallerClass(int) not available.");
+            throw new IllegalStateException("StackTraceElement[int] not available.");
         }
+    }
+
+    public static Class<?> getCallerClass(int indx, int offset) throws ClassNotFoundException{
+        int pos = indx+offset;
+        StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+        // offset inside the StackTrace
+        // [0] the stackTrace itself (e.g getStackTrace())
+        // [1] The class containing this global static block
+        // [2] The method being called from inside this static block (e.g. getCallerClass())
+        // [3] The class we are interested in
+        if ((stackTraceElements.length > 3) && (pos <= stackTraceElements.length)) {
+                return Class.forName(stackTraceElements[pos].getClassName());
+        }
+        return null;
     }
 
     public static boolean usingStackWalker() {
